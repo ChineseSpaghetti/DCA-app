@@ -8,25 +8,42 @@
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <style>
       :root { font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #102626; background: #f4f8f6; }
+      :root[data-theme="dark"] { color: #edf7f3; background: #071311; }
       * { box-sizing: border-box; }
       body { margin: 0; min-height: 100vh; background: linear-gradient(180deg, #fbfdfc, #edf5f2); }
+      :root[data-theme="dark"] body { background: linear-gradient(180deg, #071311, #0b1e1a); }
       button, input, select, textarea { font: inherit; }
-      button { cursor: pointer; }
+      button {
+        cursor: pointer;
+        transition: background-color .18s ease, color .18s ease, border-color .18s ease, box-shadow .18s ease, transform .08s ease;
+      }
+      button:active { transform: translateY(1px) scale(.99); }
+      button:focus-visible { outline: 3px solid rgba(0, 123, 85, .28); outline-offset: 2px; }
       .app { width: min(100%, 880px); margin: 0 auto; padding: 22px 16px 98px; }
       header { display: grid; grid-template-columns: 150px minmax(0, 1fr) 150px; align-items: center; gap: 12px; margin-bottom: 16px; }
       header > div:nth-child(2) { text-align: center; }
       h1, h2, p { margin: 0; }
       h1 { font-size: clamp(2rem, 8vw, 3rem); line-height: 1; }
       header p, section p, label span, .muted { color: #667875; }
+      :root[data-theme="dark"] header p, :root[data-theme="dark"] section p, :root[data-theme="dark"] label span, :root[data-theme="dark"] .muted { color: #a7bbb5; }
       .icon-btn { width: 44px; height: 44px; border: 0; border-radius: 8px; background: #e7f3ee; color: #006b49; font-weight: 900; }
+      .theme-toggle { font-size: 1.15rem; line-height: 1; }
+      .icon-btn:hover { background: #cfeade; color: #004d35; box-shadow: 0 8px 18px rgba(0, 107, 73, .12); }
+      .icon-btn:active { background: #b8decc; }
+      :root[data-theme="dark"] .icon-btn, :root[data-theme="dark"] .account-btn { background: #15342b; color: #84e1b0; }
+      :root[data-theme="dark"] .icon-btn:hover, :root[data-theme="dark"] .account-btn:hover { background: #1b4639; color: #b6f2d0; box-shadow: 0 8px 18px rgba(0, 0, 0, .22); }
+      :root[data-theme="dark"] .icon-btn:active, :root[data-theme="dark"] .account-btn:active { background: #225645; }
       .account-menu { position: relative; justify-self: end; }
       .account-btn { width: 150px; min-height: 44px; border: 0; border-radius: 8px; background: #e7f3ee; color: #006b49; font-weight: 900; display: grid; place-items: center; overflow: hidden; padding: 0 12px; white-space: nowrap; }
+      .account-btn:hover { background: #cfeade; color: #004d35; box-shadow: 0 8px 18px rgba(0, 107, 73, .12); }
+      .account-btn:active { background: #b8decc; }
       .account-btn.logged-in { padding: 0; border-radius: 50%; background: #dbeee7; }
       .account-btn.logged-in { width: 44px; height: 44px; min-height: 44px; }
       .account-btn img { width: 100%; height: 100%; object-fit: cover; display: none; }
       .account-btn.logged-in img { display: block; }
       .account-btn.logged-in span { display: none; }
       .account-popover { position: absolute; top: 54px; right: 0; z-index: 20; width: min(340px, calc(100vw - 32px)); display: none; padding: 14px; border: 1px solid #dbe5e1; border-radius: 8px; background: white; box-shadow: 0 18px 42px rgba(24, 58, 52, .16); }
+      :root[data-theme="dark"] .account-popover { border-color: #25483f; background: #10221e; }
       .account-popover.open { display: grid; gap: 12px; }
       .account-popover strong, .account-popover span { display: block; overflow-wrap: anywhere; }
       .account-popover span { color: #667875; font-size: .9rem; }
@@ -39,21 +56,39 @@
       .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; border-top: 1px solid rgba(255,255,255,.24); margin-top: 18px; padding-top: 18px; }
       .summary-grid span { display: block; color: rgba(255,255,255,.72); font-size: .88rem; }
       .tabs { display: grid; grid-template-columns: repeat(3, 1fr); margin: 18px 0 12px; border: 1px solid #dbe5e1; border-radius: 8px; background: white; overflow: hidden; }
+      :root[data-theme="dark"] .tabs { border-color: #25483f; background: #10221e; }
       .tabs button { min-height: 56px; border: 0; background: white; color: #405351; font-weight: 800; }
+      :root[data-theme="dark"] .tabs button { background: #10221e; color: #b9cbc6; }
+      .tabs button:hover { background: #eef8f4; color: #005f40; }
+      :root[data-theme="dark"] .tabs button:hover { background: #17352d; color: #84e1b0; }
       .tabs button.active { color: #006b49; border-bottom: 3px solid #006b49; }
+      .tabs button.active:hover { background: #e6f5ee; }
+      :root[data-theme="dark"] .tabs button.active { color: #84e1b0; border-bottom-color: #84e1b0; }
+      :root[data-theme="dark"] .tabs button.active:hover { background: #17352d; }
       section { margin-top: 14px; padding: 20px; border: 1px solid #dfe8e5; border-radius: 8px; background: rgba(255,255,255,.94); box-shadow: 0 12px 30px rgba(24,58,52,.07); }
+      :root[data-theme="dark"] section { border-color: #25483f; background: rgba(16, 34, 30, .96); box-shadow: 0 12px 30px rgba(0,0,0,.24); }
       .capture-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
       .capture-actions button { min-height: 84px; border: 1px solid #d6e2de; border-radius: 8px; background: white; color: #005f40; font-weight: 850; }
+      :root[data-theme="dark"] .capture-actions button, :root[data-theme="dark"] .secondary { border-color: #42685d; background: #132b26; color: #dff7ed; }
+      .capture-actions button:hover { border-color: #7ab69d; background: #eef8f4; color: #004d35; box-shadow: 0 10px 22px rgba(24, 58, 52, .08); }
+      .capture-actions button:active { background: #dff1e8; }
       .preview { display: none; position: relative; height: 180px; margin-top: 14px; border: 1px solid #dce5e2; border-radius: 8px; overflow: hidden; background: #eef5f2; }
       .preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
       textarea, input, select { width: 100%; min-height: 50px; border: 1px solid #d5dfdc; border-radius: 8px; padding: 12px 14px; outline: none; background: white; }
+      :root[data-theme="dark"] textarea, :root[data-theme="dark"] input, :root[data-theme="dark"] select { border-color: #42685d; background: #0d1d1a; color: #edf7f3; }
       textarea:focus, input:focus, select:focus { border-color: #007b55; box-shadow: 0 0 0 4px rgba(0,123,85,.1); }
       textarea { min-height: 82px; resize: vertical; }
       label { display: grid; gap: 7px; }
       .form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 16px; }
       .row { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 16px; padding: 16px; border-radius: 8px; background: #e8f7ef; }
+      :root[data-theme="dark"] .row { background: #14352d; }
       .primary { border: 0; border-radius: 8px; color: white; background: #005f40; padding: 13px 18px; font-weight: 900; }
+      .primary:hover { background: #007a53; box-shadow: 0 10px 22px rgba(0, 95, 64, .22); }
+      .primary:active { background: #004d35; }
       .secondary { border: 1px solid #b9cac5; border-radius: 8px; color: #15302e; background: white; padding: 10px 13px; font-weight: 800; }
+      .secondary:hover { border-color: #6aa98e; background: #eef8f4; color: #005f40; box-shadow: 0 8px 18px rgba(24, 58, 52, .08); }
+      :root[data-theme="dark"] .secondary:hover, :root[data-theme="dark"] .capture-actions button:hover { border-color: #5a917d; background: #17352d; color: #b6f2d0; }
+      .secondary:active { background: #dff1e8; }
       .records-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
       .status { display: none; margin-top: 10px; color: #005f40; font-weight: 800; }
       .holdings, .transactions { display: grid; margin-top: 12px; }
@@ -62,7 +97,12 @@
       .positive { color: #00854d; }
       .negative { color: #d72828; }
       .bottom { position: fixed; left: 50%; bottom: 0; transform: translateX(-50%); width: min(100%, 880px); display: grid; grid-template-columns: repeat(3, 1fr); padding: 10px 12px; border: 1px solid #dce6e2; border-bottom: 0; border-radius: 24px 24px 0 0; background: rgba(255,255,255,.95); }
+      :root[data-theme="dark"] .bottom { border-color: #25483f; background: rgba(10, 23, 20, .95); }
       .bottom button { min-height: 54px; border: 0; background: transparent; color: #405351; font-weight: 850; }
+      .bottom button:hover { color: #005f40; background: #eef8f4; border-radius: 8px; }
+      :root[data-theme="dark"] .bottom button { color: #b9cbc6; }
+      :root[data-theme="dark"] .bottom button:hover { color: #84e1b0; background: #17352d; }
+      .bottom button:active { background: #dff1e8; }
       @media (max-width: 640px) {
         header { grid-template-columns: 44px minmax(0, 1fr) 132px; gap: 10px; }
         .account-btn { width: 132px; padding: 0 10px; font-size: .88rem; }
@@ -79,7 +119,7 @@
     <main class="app">
       <input id="file" hidden type="file" accept="image/*" />
       <header>
-        <button class="icon-btn" aria-label="Settings">⚙</button>
+        <button class="icon-btn theme-toggle" id="themeToggle" aria-label="Switch to dark mode">&#9790;</button>
         <div>
           <h1>DCA Ledger</h1>
           <p>Make DCA Great Again!</p>
@@ -198,6 +238,7 @@
         displayCurrency: 'THB',
         fx: { base: 'USD', quote: 'THB', rate: 35, date: '', source: 'Fallback' },
         quoteMeta: { source: 'Seed', updatedAt: '' },
+        theme: 'light',
         liffId: DEFAULT_LIFF_ID,
         lineProfile: null,
         txs: []
@@ -207,6 +248,7 @@
       state.fx ||= seed.fx;
       state.prices ||= {};
       state.quoteMeta ||= { source: 'Saved', updatedAt: '' };
+      state.theme = state.theme === 'dark' ? 'dark' : 'light';
       state.liffId = state.liffId && state.liffId.includes('-') ? state.liffId : DEFAULT_LIFF_ID;
       state.lineProfile ||= null;
       state.txs = state.txs.map((tx) => ({ currency: 'THB', stockValue: 0, ...tx }));
@@ -221,7 +263,45 @@
       const num = (v) => new Intl.NumberFormat('en-US', { maximumFractionDigits: 4 }).format(Number.isFinite(v) ? v : 0);
       $('date').value = new Date().toISOString().slice(0, 10);
       $('displayCurrency').value = state.displayCurrency;
+      applyTheme(state.theme);
       function saveState() { localStorage.setItem(key, JSON.stringify(state)); }
+      function applyTheme(theme) {
+        state.theme = theme === 'dark' ? 'dark' : 'light';
+        document.documentElement.dataset.theme = state.theme;
+        $('themeToggle').textContent = state.theme === 'dark' ? '\u2600' : '\u263e';
+        $('themeToggle').setAttribute('aria-label', state.theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+      }
+      async function toggleTheme() {
+        applyTheme(state.theme === 'dark' ? 'light' : 'dark');
+        saveState();
+        await syncThemePreference();
+      }
+      async function syncThemePreference() {
+        const lineUserId = cloudUserId();
+        if (!lineUserId) return;
+        try {
+          await fetch(`/api/preferences?lineUserId=${encodeURIComponent(lineUserId)}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ theme: state.theme })
+          });
+        } catch {}
+      }
+      async function loadThemePreference() {
+        const lineUserId = cloudUserId();
+        if (!lineUserId) return;
+        try {
+          const response = await fetch(`/api/preferences?lineUserId=${encodeURIComponent(lineUserId)}`);
+          const data = await response.json();
+          if (!response.ok || response.status === 501) return;
+          if (data.preferences?.theme) {
+            applyTheme(data.preferences.theme);
+            saveState();
+          } else {
+            await syncThemePreference();
+          }
+        } catch {}
+      }
       function convertAmount(amount, fromCurrency, toCurrency = state.displayCurrency) {
         const value = Number(amount) || 0;
         const from = fromCurrency || 'THB';
@@ -327,6 +407,7 @@
           saveState();
           renderLineProfile();
           setLineStatus(liff.isInClient() ? 'Connected inside LINE.' : 'Connected in external browser.');
+          await loadThemePreference();
           await loadCloudTransactions();
         } catch (error) {
           setLineStatus(error.message || 'LINE initialization failed. Check LIFF ID and endpoint URL.');
@@ -636,6 +717,7 @@
       $('refreshPrices').addEventListener('click', refreshStockPrices);
       $('accountLogin').addEventListener('click', lineLogin);
       $('accountLogout').addEventListener('click', lineLogout);
+      $('themeToggle').addEventListener('click', toggleTheme);
       $('accountButton').addEventListener('click', () => {
         if (state.lineProfile?.userId) {
           $('accountPopover').classList.toggle('open');

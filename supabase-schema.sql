@@ -17,3 +17,9 @@ create table if not exists public.transactions (
 create index if not exists transactions_line_user_id_date_idx
   on public.transactions (line_user_id, date desc, created_at desc);
 
+create table if not exists public.user_preferences (
+  line_user_id text primary key,
+  theme text not null default 'light' check (theme in ('light', 'dark')),
+  updated_at timestamptz not null default now()
+);
+
