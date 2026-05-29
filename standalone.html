@@ -122,7 +122,7 @@
           </div>
           <button class="secondary" id="lineLogout">Logout</button>
         </div>
-        <p class="muted" id="lineStatus">LINE Login is ready.</p>
+        <p class="muted" id="lineStatus">Tap Login with LINE when you are ready.</p>
       </section>
 
       <section data-panel="capture overview">
@@ -287,6 +287,7 @@
           setLineStatus('LIFF SDK is still loading.');
           return;
         }
+        setLineStatus('Opening LINE Login...');
         try {
           await liff.init({ liffId, withLoginOnExternalBrowser: true });
           if (!liff.isLoggedIn()) {
@@ -611,7 +612,9 @@
       setTab('overview');
       refreshFxRate();
       refreshStockPrices();
-      initializeLine();
+      if (new URLSearchParams(location.search).has('code')) {
+        initializeLine();
+      }
     </script>
   </body>
 </html>
