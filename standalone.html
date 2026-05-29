@@ -431,14 +431,28 @@
           setLineStatus(error.message || 'LINE login failed.');
         }
       }
-      function lineLogout() {
-        if (window.liff?.isLoggedIn?.()) {
-          liff.logout();
+      async function lineLogout() {
+        $('accountLogout').disabled = true;
+        try {
+          if (window.liff) {
+            try {
+              await liff.init({ liffId: DEFAULT_LIFF_ID, withLoginOnExternalBrowser: true });
+            } catch {}
+            try {
+              if (liff.isLoggedIn()) liff.logout();
+            } catch {}
+          }
+        } finally {
+          state.lineProfile = null;
+          state.txs = [];
+          state.clearedPreLoginDemoData = true;
+          saveState();
+          renderLineProfile();
+          render();
+          $('accountPopover').classList.remove('open');
+          $('accountLogout').disabled = false;
+          setLineStatus('Logged out from this app.');
         }
-        state.lineProfile = null;
-        saveState();
-        renderLineProfile();
-        setLineStatus('Logged out from this app.');
       }
       function holdings() {
         const map = new Map();
