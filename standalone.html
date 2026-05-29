@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DCA Ledger</title>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <style>
+      :root { font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #102626; background: #f4f8f6; }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; background: linear-gradient(180deg, #fbfdfc, #edf5f2); }
+      button, input, select, textarea { font: inherit; }
+      button { cursor: pointer; }
+      .app { width: min(100%, 880px); margin: 0 auto; padding: 22px 16px 98px; }
+      header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+      h1, h2, p { margin: 0; }
+      h1 { font-size: clamp(2rem, 8vw, 3rem); line-height: 1; }
+      header p, section p, label span, .muted { color: #667875; }
+      .icon-btn { width: 44px; height: 44px; border: 0; border-radius: 8px; background: #e7f3ee; color: #006b49; font-weight: 900; }
+      .summary { color: white; border-radius: 8px; padding: 24px; background: linear-gradient(135deg, #004d35, #002a22); box-shadow: 0 18px 42px rgba(0, 77, 53, .22); }
+      .summary .big { display: block; margin: 8px 0; font-size: clamp(2.2rem, 10vw, 3.35rem); font-weight: 900; }
+      .summary-top { display: flex; align-items: start; justify-content: space-between; gap: 14px; }
+      .summary-top label { min-width: 128px; color: rgba(255,255,255,.76); font-size: .84rem; }
+      .summary-top select { min-height: 42px; color: white; background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.25); }
+      .fx-note { display: block; margin-top: 10px; color: rgba(255,255,255,.72); }
+      .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; border-top: 1px solid rgba(255,255,255,.24); margin-top: 18px; padding-top: 18px; }
+      .summary-grid span { display: block; color: rgba(255,255,255,.72); font-size: .88rem; }
+      .tabs { display: grid; grid-template-columns: repeat(3, 1fr); margin: 18px 0 12px; border: 1px solid #dbe5e1; border-radius: 8px; background: white; overflow: hidden; }
+      .tabs button { min-height: 56px; border: 0; background: white; color: #405351; font-weight: 800; }
+      .tabs button.active { color: #006b49; border-bottom: 3px solid #006b49; }
+      section { margin-top: 14px; padding: 20px; border: 1px solid #dfe8e5; border-radius: 8px; background: rgba(255,255,255,.94); box-shadow: 0 12px 30px rgba(24,58,52,.07); }
+      .capture-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+      .capture-actions button { min-height: 84px; border: 1px solid #d6e2de; border-radius: 8px; background: white; color: #005f40; font-weight: 850; }
+      .preview { display: none; position: relative; height: 180px; margin-top: 14px; border: 1px solid #dce5e2; border-radius: 8px; overflow: hidden; background: #eef5f2; }
+      .preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+      textarea, input, select { width: 100%; min-height: 50px; border: 1px solid #d5dfdc; border-radius: 8px; padding: 12px 14px; outline: none; background: white; }
+      textarea:focus, input:focus, select:focus { border-color: #007b55; box-shadow: 0 0 0 4px rgba(0,123,85,.1); }
+      textarea { min-height: 82px; resize: vertical; }
+      label { display: grid; gap: 7px; }
+      .form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 16px; }
+      .row { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 16px; padding: 16px; border-radius: 8px; background: #e8f7ef; }
+      .primary { border: 0; border-radius: 8px; color: white; background: #005f40; padding: 13px 18px; font-weight: 900; }
+      .secondary { border: 1px solid #b9cac5; border-radius: 8px; color: #15302e; background: white; padding: 10px 13px; font-weight: 800; }
+      .records-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+      .login-panel { display: grid; gap: 12px; }
+      .login-card { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px; border: 1px solid #dbe5e1; border-radius: 8px; background: #f8fbfa; }
+      .profile { display: flex; align-items: center; gap: 12px; min-width: 0; }
+      .profile img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: #e7f3ee; }
+      .profile strong, .profile span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .profile span { color: #667875; font-size: .9rem; }
+      .config-row { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: end; }
+      .status { display: none; margin-top: 10px; color: #005f40; font-weight: 800; }
+      .holdings, .transactions { display: grid; margin-top: 12px; }
+      .holding, .tx { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 12px; padding: 13px 0; border-top: 1px solid #e5ece9; }
+      .holding strong, .tx strong { display: block; }
+      .positive { color: #00854d; }
+      .negative { color: #d72828; }
+      .bottom { position: fixed; left: 50%; bottom: 0; transform: translateX(-50%); width: min(100%, 880px); display: grid; grid-template-columns: repeat(3, 1fr); padding: 10px 12px; border: 1px solid #dce6e2; border-bottom: 0; border-radius: 24px 24px 0 0; background: rgba(255,255,255,.95); }
+      .bottom button { min-height: 54px; border: 0; background: transparent; color: #405351; font-weight: 850; }
+      @media (max-width: 640px) {
+        .summary-grid, .form-grid, .capture-actions { grid-template-columns: 1fr; }
+        .holding, .tx { grid-template-columns: 1fr; }
+        .records-head { flex-direction: column; }
+        .login-card, .config-row { grid-template-columns: 1fr; flex-direction: column; align-items: stretch; }
+        .row { align-items: stretch; flex-direction: column; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <input id="file" hidden type="file" accept="image/*" />
+      <header>
+        <button class="icon-btn" aria-label="Settings">⚙</button>
+        <div>
+          <h1>DCA Ledger</h1>
+          <p>LINE web app prototype</p>
+        </div>
+        <button class="icon-btn" id="upload" aria-label="Upload">↑</button>
+      </header>
+
+      <div class="summary">
+        <div class="summary-top">
+          <div>
+            <span>Portfolio value</span>
+            <strong class="big" id="portfolioValue">฿0.00</strong>
+            <small id="costBase">Average cost base ฿0.00</small>
+            <small class="fx-note" id="fxNote">FX rate loading...</small>
+          </div>
+          <label>
+            Display
+            <select id="displayCurrency"><option value="THB">THB</option><option value="USD">USD</option></select>
+          </label>
+        </div>
+        <div class="summary-grid">
+          <div><span>Total cost</span><strong id="totalCost">฿0.00</strong></div>
+          <div><span>Current value</span><strong id="currentValue">฿0.00</strong></div>
+          <div><span>Unrealized P/L</span><strong id="profit">฿0.00</strong></div>
+        </div>
+      </div>
+
+      <nav class="tabs">
+        <button class="active" data-tab="overview">Overview</button>
+        <button data-tab="capture">Capture</button>
+        <button data-tab="records">Records</button>
+      </nav>
+
+      <section class="login-panel" data-panel="overview">
+        <div class="records-head">
+          <div>
+            <h2>LINE account</h2>
+            <p>Connect LINE Login before using this as a real LIFF app.</p>
+          </div>
+          <button class="secondary" id="lineLogin">LINE login</button>
+        </div>
+        <div class="login-card">
+          <div class="profile">
+            <img id="lineAvatar" alt="" />
+            <div>
+              <strong id="lineName">Not connected</strong>
+              <span id="lineUserId">Add a LIFF ID to enable login.</span>
+            </div>
+          </div>
+          <button class="secondary" id="lineLogout">Logout</button>
+        </div>
+        <div class="config-row">
+          <label><span>LIFF ID</span><input id="liffId" placeholder="1234567890-AbCdEfGh" /></label>
+          <button class="secondary" id="saveLiff">Save</button>
+          <button class="secondary" id="initLiff">Initialize</button>
+        </div>
+        <p class="muted" id="lineStatus">LINE Login is optional for local testing.</p>
+      </section>
+
+      <section data-panel="capture overview">
+        <h2>Capture trade screenshot</h2>
+        <p>Attach proof of each buy or sell, then review the numbers before saving.</p>
+        <div class="capture-actions">
+          <button id="takePhoto">📷 Take photo</button>
+          <button id="chooseImage">🖼 Choose image</button>
+        </div>
+        <div class="preview" id="preview"><img id="previewImg" alt="Uploaded transaction screenshot" /></div>
+      </section>
+
+      <section data-panel="capture overview">
+        <h2>Review transaction</h2>
+        <p>Upload a screenshot to read ราคาที่ได้จริง, จำนวนหุ้น, and มูลค่าหุ้น.</p>
+        <label style="margin-top: 14px;">
+          <span>Screenshot text</span>
+          <textarea id="ocr" placeholder="Paste brokerage receipt text here..."></textarea>
+        </label>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;">
+          <button class="secondary" id="aiRead">Gemini read photo</button>
+          <button class="secondary" id="readImage">Read screenshot</button>
+          <button class="secondary" id="parse">Parse text</button>
+        </div>
+        <div class="status" id="ocrStatus"></div>
+        <div class="form-grid">
+          <label><span>Symbol</span><input id="symbol" placeholder="KTB" /></label>
+          <label><span>Side</span><select id="side"><option value="buy">Buy</option><option value="sell">Sell</option></select></label>
+          <label><span>Currency</span><select id="currency"><option value="THB">THB</option><option value="USD">USD</option></select></label>
+          <label><span>Date</span><input id="date" type="date" /></label>
+          <label><span>Shares</span><input id="shares" inputmode="decimal" placeholder="1000" /></label>
+          <label><span>Price / ราคาที่ได้จริง</span><input id="price" inputmode="decimal" placeholder="299.05" /></label>
+          <label><span>Stock value / มูลค่าหุ้น</span><input id="stockValue" inputmode="decimal" placeholder="39.94" /></label>
+          <label><span>Fee</span><input id="fee" inputmode="decimal" placeholder="12.34" /></label>
+        </div>
+        <div class="row">
+          <div><span class="muted">Total amount</span><strong id="draftTotal">฿0.00</strong></div>
+          <button class="primary" id="save">Save transaction</button>
+        </div>
+      </section>
+
+      <section data-panel="records overview">
+        <div class="records-head">
+          <div>
+            <h2>Investment portfolio</h2>
+            <p>Average cost, quantity, value, and profit by symbol.</p>
+          </div>
+          <button class="secondary" id="refreshPrices">Refresh prices</button>
+        </div>
+        <p class="muted" id="quoteNote" style="margin-top: 10px;">Stock prices use saved values until refreshed.</p>
+        <div class="holdings" id="holdings"></div>
+      </section>
+
+      <section data-panel="records">
+        <h2>Transactions</h2>
+        <div class="transactions" id="transactions"></div>
+      </section>
+    </main>
+
+    <nav class="bottom">
+      <button data-tab="overview">Home</button>
+      <button data-tab="capture">Add</button>
+      <button data-tab="records">Records</button>
+    </nav>
+
+    <script>
+      const key = 'dca-line-ledger-standalone-v1';
+      const seed = {
+        prices: {
+          KTB: { price: 17.8, currency: 'THB', source: 'Seed' },
+          KBANK: { price: 147, currency: 'THB', source: 'Seed' },
+          PTT: { price: 31.5, currency: 'THB', source: 'Seed' }
+        },
+        displayCurrency: 'THB',
+        fx: { base: 'USD', quote: 'THB', rate: 35, date: '', source: 'Fallback' },
+        quoteMeta: { source: 'Seed', updatedAt: '' },
+        liffId: '',
+        lineProfile: null,
+        txs: [
+          { id: crypto.randomUUID(), symbol: 'KTB', side: 'buy', date: '2026-05-15', shares: 1000, price: 17.2, fee: 12.34, currency: 'THB' },
+          { id: crypto.randomUUID(), symbol: 'KBANK', side: 'buy', date: '2026-05-08', shares: 200, price: 138.6, fee: 18.5, currency: 'THB' },
+          { id: crypto.randomUUID(), symbol: 'PTT', side: 'buy', date: '2026-04-25', shares: 800, price: 33.45, fee: 10.2, currency: 'THB' },
+          { id: crypto.randomUUID(), symbol: 'KTB', side: 'buy', date: '2026-04-12', shares: 700, price: 16.8, fee: 9.1, currency: 'THB' }
+        ]
+      };
+      let state = JSON.parse(localStorage.getItem(key) || 'null') || seed;
+      state.displayCurrency ||= 'THB';
+      state.fx ||= seed.fx;
+      state.prices ||= {};
+      state.quoteMeta ||= { source: 'Saved', updatedAt: '' };
+      state.liffId ||= '';
+      state.lineProfile ||= null;
+      state.txs = state.txs.map((tx) => ({ currency: 'THB', stockValue: 0, ...tx }));
+      let screenshot = '';
+      const $ = (id) => document.getElementById(id);
+      const money = (v, currency = 'THB') => new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number.isFinite(v) ? v : 0);
+      const num = (v) => new Intl.NumberFormat('en-US', { maximumFractionDigits: 4 }).format(Number.isFinite(v) ? v : 0);
+      $('date').value = new Date().toISOString().slice(0, 10);
+      $('displayCurrency').value = state.displayCurrency;
+      $('liffId').value = state.liffId;
+
+      function saveState() { localStorage.setItem(key, JSON.stringify(state)); }
+      function convertAmount(amount, fromCurrency, toCurrency = state.displayCurrency) {
+        const value = Number(amount) || 0;
+        const from = fromCurrency || 'THB';
+        const to = toCurrency || 'THB';
+        const usdThb = Number(state.fx?.rate) || 35;
+        if (from === to) return value;
+        if (from === 'USD' && to === 'THB') return value * usdThb;
+        if (from === 'THB' && to === 'USD') return value / usdThb;
+        return value;
+      }
+      function priceQuote(symbol, fallbackCurrency) {
+        const quote = state.prices?.[symbol];
+        if (typeof quote === 'number') return { price: quote, currency: fallbackCurrency || 'THB', source: 'Saved' };
+        if (quote && typeof quote === 'object') return quote;
+        return null;
+      }
+      function renderLineProfile() {
+        const profile = state.lineProfile;
+        $('lineName').textContent = profile?.displayName || 'Not connected';
+        $('lineUserId').textContent = profile?.userId ? `LINE user: ${profile.userId}` : (state.liffId ? 'Ready to initialize LIFF.' : 'Add a LIFF ID to enable login.');
+        $('lineAvatar').src = profile?.pictureUrl || '';
+        $('lineAvatar').style.visibility = profile?.pictureUrl ? 'visible' : 'hidden';
+      }
+      function setLineStatus(message) {
+        $('lineStatus').textContent = message;
+      }
+      async function initializeLine() {
+        const liffId = $('liffId').value.trim();
+        if (!liffId) {
+          setLineStatus('Enter your LIFF ID first.');
+          return;
+        }
+        if (!window.liff) {
+          setLineStatus('LIFF SDK is still loading. Try again in a moment.');
+          return;
+        }
+        state.liffId = liffId;
+        saveState();
+        setLineStatus('Initializing LINE...');
+        try {
+          await liff.init({ liffId, withLoginOnExternalBrowser: true });
+          if (!liff.isLoggedIn()) {
+            state.lineProfile = null;
+            saveState();
+            renderLineProfile();
+            setLineStatus('LIFF initialized. Tap LINE login to continue.');
+            return;
+          }
+          const profile = await liff.getProfile();
+          state.lineProfile = {
+            userId: profile.userId,
+            displayName: profile.displayName,
+            pictureUrl: profile.pictureUrl || ''
+          };
+          saveState();
+          renderLineProfile();
+          setLineStatus(liff.isInClient() ? 'Connected inside LINE.' : 'Connected in external browser.');
+        } catch (error) {
+          setLineStatus(error.message || 'LINE initialization failed. Check LIFF ID and endpoint URL.');
+        }
+      }
+      async function lineLogin() {
+        const liffId = $('liffId').value.trim();
+        if (!liffId) {
+          setLineStatus('Enter and save your LIFF ID first.');
+          return;
+        }
+        if (!window.liff) {
+          setLineStatus('LIFF SDK is still loading.');
+          return;
+        }
+        try {
+          await liff.init({ liffId, withLoginOnExternalBrowser: true });
+          if (!liff.isLoggedIn()) {
+            liff.login({ redirectUri: location.href });
+            return;
+          }
+          await initializeLine();
+        } catch (error) {
+          setLineStatus(error.message || 'LINE login failed.');
+        }
+      }
+      function lineLogout() {
+        if (window.liff?.isLoggedIn?.()) {
+          liff.logout();
+        }
+        state.lineProfile = null;
+        saveState();
+        renderLineProfile();
+        setLineStatus('Logged out from this app.');
+      }
+      function holdings() {
+        const map = new Map();
+        state.txs.forEach((tx) => {
+          const symbol = tx.symbol.toUpperCase();
+          const row = map.get(symbol) || { symbol, quantity: 0, cost: 0, realized: 0, currency: tx.currency || 'THB' };
+          const qty = Number(tx.shares) || 0;
+          const gross = Number(tx.stockValue) || qty * (Number(tx.price) || 0);
+          const fee = Number(tx.fee) || 0;
+          if (tx.side === 'sell') {
+            const avg = row.quantity ? row.cost / row.quantity : 0;
+            row.quantity -= qty;
+            row.cost -= avg * qty;
+            row.realized += gross - fee - avg * qty;
+          } else {
+            row.quantity += qty;
+            row.cost += gross + fee;
+          }
+          map.set(symbol, row);
+        });
+        return [...map.values()].map((row) => {
+          const quote = priceQuote(row.symbol, row.currency);
+          const currentPrice = Number(quote?.price) || (row.quantity ? row.cost / row.quantity : 0);
+          const currentPriceCurrency = quote?.currency || row.currency;
+          const quotedValue = row.quantity * currentPrice;
+          const currentValue = convertAmount(quotedValue, currentPriceCurrency, row.currency);
+          const avg = row.quantity ? row.cost / row.quantity : 0;
+          const pl = currentValue - row.cost;
+          return { ...row, currentPrice, currentPriceCurrency, currentValue, quotedValue, avg, pl, pct: row.cost ? (pl / row.cost) * 100 : 0, quote };
+        });
+      }
+      function render() {
+        const rows = holdings();
+        const displayCurrency = state.displayCurrency || 'THB';
+        const cost = rows.reduce((s, r) => s + convertAmount(r.cost, r.currency, displayCurrency), 0);
+        const value = rows.reduce((s, r) => s + convertAmount(r.currentValue, r.currency, displayCurrency), 0);
+        const pl = value - cost;
+        $('displayCurrency').value = displayCurrency;
+        $('portfolioValue').textContent = money(value, displayCurrency);
+        $('costBase').textContent = `Average cost base ${money(cost, displayCurrency)}`;
+        $('totalCost').textContent = money(cost, displayCurrency);
+        $('currentValue').textContent = money(value, displayCurrency);
+        $('profit').textContent = money(pl, displayCurrency);
+        $('profit').className = pl >= 0 ? 'positive' : 'negative';
+        $('fxNote').textContent = `FX: 1 USD = ${num(Number(state.fx?.rate) || 0)} THB · ${state.fx?.source || 'Fallback'} ${state.fx?.date || ''}`;
+        $('quoteNote').textContent = `Prices: ${state.quoteMeta?.source || 'Saved'} ${state.quoteMeta?.updatedAt || ''}`;
+        $('holdings').innerHTML = rows.map((r) => `
+          <article class="holding">
+            <div><strong>${r.symbol}</strong><span class="muted">Avg ${money(r.avg, r.currency || 'THB')} · Qty ${num(r.quantity)} · Last ${money(r.currentPrice, r.currentPriceCurrency || r.currency || 'THB')}</span></div>
+            <strong>${money(convertAmount(r.currentValue, r.currency || 'THB', displayCurrency), displayCurrency)}</strong>
+            <span class="${r.pl >= 0 ? 'positive' : 'negative'}">${money(r.pl, r.currency || 'THB')} (${r.pct.toFixed(2)}%)</span>
+          </article>`).join('');
+        $('transactions').innerHTML = state.txs.map((tx) => `
+          <article class="tx">
+            <div><strong>${tx.symbol} · ${tx.side.toUpperCase()}</strong><span class="muted">${tx.date} · ${num(tx.shares)} shares at ${money(tx.price, tx.currency || 'THB')}</span></div>
+            <span>${money(Number(tx.stockValue) || tx.shares * tx.price, tx.currency || 'THB')}</span>
+            <button class="secondary" onclick="removeTx('${tx.id}')">Remove</button>
+          </article>`).join('');
+        updateDraftTotal();
+      }
+      function setTab(tab) {
+        document.querySelectorAll('[data-tab]').forEach((btn) => btn.classList.toggle('active', btn.dataset.tab === tab));
+        document.querySelectorAll('[data-panel]').forEach((panel) => panel.style.display = panel.dataset.panel.includes(tab) ? '' : 'none');
+      }
+      function updateDraftTotal() {
+        const stockValue = Number($('stockValue').value) || (Number($('shares').value) || 0) * (Number($('price').value) || 0);
+        $('draftTotal').textContent = money(stockValue + (Number($('fee').value) || 0), $('currency').value);
+      }
+      async function refreshFxRate() {
+        try {
+          const response = await fetch('/api/fx');
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error || 'FX rate unavailable.');
+          state.fx = data;
+          saveState();
+          render();
+        } catch (error) {
+          $('fxNote').textContent = `FX: using saved/fallback rate. ${error.message || ''}`;
+        }
+      }
+      async function refreshStockPrices() {
+        const rows = holdings();
+        if (!rows.length) return;
+        $('quoteNote').textContent = 'Prices: refreshing...';
+        const items = rows.map((row) => `${encodeURIComponent(row.symbol)}:${encodeURIComponent(row.currency || 'USD')}`).join(',');
+        try {
+          const response = await fetch(`/api/quotes?items=${items}`);
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error || 'Quote refresh failed.');
+          state.prices = { ...state.prices, ...data.quotes };
+          state.quoteMeta = {
+            source: data.source || 'Quote provider',
+            updatedAt: new Date().toLocaleString(),
+            errors: data.errors || {}
+          };
+          saveState();
+          render();
+        } catch (error) {
+          $('quoteNote').textContent = `Prices: could not refresh. ${error.message || ''}`;
+        }
+      }
+      function parseText() {
+        const parsed = parseBrokerText($('ocr').value);
+        if (parsed.symbol) $('symbol').value = parsed.symbol;
+        if (parsed.side) $('side').value = parsed.side;
+        if (parsed.currency) $('currency').value = parsed.currency;
+        if (parsed.date) $('date').value = parsed.date;
+        if (parsed.shares) $('shares').value = parsed.shares;
+        if (parsed.price) $('price').value = parsed.price;
+        if (parsed.stockValue) $('stockValue').value = parsed.stockValue;
+        if (parsed.fee) $('fee').value = parsed.fee;
+        updateDraftTotal();
+      }
+      function cleanNumber(value) {
+        if (!value) return '';
+        const match = String(value).replace(/,/g, '').match(/\d+(?:\.\d+)?/);
+        return match ? match[0] : '';
+      }
+      function numbersIn(value) {
+        return (String(value).replace(/,/g, '').match(/\d+(?:\.\d+)?/g) || []).map(Number);
+      }
+      function valueAfter(text, labels) {
+        for (const label of labels) {
+          const pattern = new RegExp(`${label}\\s*[:：-]?\\s*(\\d[\\d,.]*(?:\\.\\d+)?)`, 'i');
+          const match = text.match(pattern);
+          if (match) return cleanNumber(match[1]);
+        }
+        return '';
+      }
+      function parseThaiDate(text) {
+        const months = {
+          '\u0e21.\u0e04.': '01',
+          '\u0e01.\u0e1e.': '02',
+          '\u0e21\u0e35.\u0e04.': '03',
+          '\u0e40\u0e21.\u0e22.': '04',
+          '\u0e1e.\u0e04.': '05',
+          '\u0e21\u0e34.\u0e22.': '06',
+          '\u0e01.\u0e04.': '07',
+          '\u0e2a.\u0e04.': '08',
+          '\u0e01.\u0e22.': '09',
+          '\u0e15.\u0e04.': '10',
+          '\u0e1e.\u0e22.': '11',
+          '\u0e18.\u0e04.': '12'
+        };
+        const match = text.match(/(\d{1,2})\s*([\u0e01-\u0e5b.]{3,8})\s*(\d{2,4})/);
+        if (!match) return '';
+        const month = months[match[2]];
+        if (!month) return '';
+        let year = Number(match[3]);
+        if (year < 100) year += 2500;
+        if (year > 2400) year -= 543;
+        return `${year}-${month}-${match[1].padStart(2, '0')}`;
+      }
+      function parseBrokerText(rawText) {
+        const text = rawText.replace(/[,฿]/g, '').replace(/\s+/g, ' ').trim();
+        const upper = text.toUpperCase();
+        const symbols = upper.match(/\b[A-Z]{2,8}\b/g) || [];
+        let stockValue = valueAfter(text, ['\u0e21\u0e39\u0e25\u0e04\u0e48\u0e32\u0e2b\u0e38\u0e49\u0e19', 'STOCK\\s*VALUE', 'VALUE']);
+        let shares = valueAfter(text, ['\u0e08\u0e33\u0e19\u0e27\u0e19\u0e2b\u0e38\u0e49\u0e19', 'SHARES?', 'QTY', 'QUANTITY']);
+        let price = valueAfter(text, ['\u0e23\u0e32\u0e04\u0e32\u0e17\u0e35\u0e48\u0e44\u0e14\u0e49\u0e08\u0e23\u0e34\u0e07', 'ACTUAL\\s*PRICE', 'PRICE']);
+        const dimePair = text.match(/\u0e23\u0e32\u0e04\u0e32\u0e17\u0e35\u0e48\u0e44\u0e14\u0e49\u0e08\u0e23\u0e34\u0e07[\s\S]{0,80}?\u0e08\u0e33\u0e19\u0e27\u0e19\u0e2b\u0e38\u0e49\u0e19([\s\S]{0,120}?)\u0e21\u0e39\u0e25\u0e04\u0e48\u0e32\u0e2b\u0e38\u0e49\u0e19/);
+        if (dimePair) {
+          const pairNumbers = numbersIn(dimePair[1]).filter((item) => item > 0);
+          const pairedPrice = pairNumbers.find((item) => item > 1);
+          const pairedShares = pairNumbers.find((item) => item > 0 && item < 1);
+          price = pairedPrice ? String(pairedPrice) : price;
+          shares = pairedShares ? String(pairedShares) : shares;
+        }
+        const valueLine = text.match(/\u0e21\u0e39\u0e25\u0e04\u0e48\u0e32\u0e2b\u0e38\u0e49\u0e19([\s\S]{0,60})/);
+        if (!stockValue && valueLine) {
+          stockValue = String(numbersIn(valueLine[1]).find((item) => item > 0) || '');
+        }
+        const commission = valueAfter(text, ['\u0e04\u0e48\u0e32\u0e04\u0e2d\u0e21\u0e21\u0e34\u0e0a\u0e0a\u0e31\u0e48\u0e19', 'COMMISSION']);
+        const vat = valueAfter(text, ['VAT', '\u0e20\u0e32\u0e29\u0e35\u0e21\u0e39\u0e25\u0e04\u0e48\u0e32\u0e40\u0e1e\u0e34\u0e48\u0e21']);
+        const fee = (Number(commission) || 0) + (Number(vat) || 0);
+        return {
+          symbol: symbols.find((s) => !['USD', 'NASDAQ', 'MARKET', 'VAT', 'BUY', 'SELL', 'DIME'].includes(s)) || '',
+          side: /SELL|\u0e02\u0e32\u0e22/i.test(text) ? 'sell' : 'buy',
+          currency: /USD/i.test(text) ? 'USD' : '',
+          date: parseThaiDate(text),
+          shares,
+          price,
+          stockValue,
+          fee: fee ? String(Number(fee.toFixed(6))) : ''
+        };
+      }
+      function setStatus(message) {
+        $('ocrStatus').textContent = message;
+        $('ocrStatus').style.display = message ? 'block' : 'none';
+      }
+      async function readScreenshot() {
+        if (!screenshot) {
+          setStatus('Upload a screenshot first.');
+          return;
+        }
+        if (!window.Tesseract) {
+          setStatus('OCR library is still loading. Try again in a moment.');
+          return;
+        }
+        setStatus('Reading screenshot...');
+        try {
+          const result = await Tesseract.recognize(screenshot, 'tha+eng');
+          $('ocr').value = result.data.text;
+          parseText();
+          setStatus('Screenshot read. Please review before saving.');
+        } catch (error) {
+          setStatus('Could not read automatically. Paste OCR text or enter values manually.');
+        }
+      }
+      function applyParsedTransaction(parsed) {
+        if (parsed.symbol) $('symbol').value = String(parsed.symbol).toUpperCase();
+        if (parsed.side && parsed.side !== 'unknown') $('side').value = parsed.side;
+        if (parsed.currency) $('currency').value = parsed.currency;
+        if (parsed.date) $('date').value = parsed.date;
+        if (parsed.shares) $('shares').value = parsed.shares;
+        if (parsed.price) $('price').value = parsed.price;
+        if (parsed.stockValue) $('stockValue').value = parsed.stockValue;
+        const fee = Number(parsed.fee) || (Number(parsed.commission) || 0) + (Number(parsed.vat) || 0);
+        if (fee) $('fee').value = Number(fee.toFixed(6));
+        updateDraftTotal();
+      }
+      async function aiReadScreenshot() {
+        if (!screenshot) {
+          setStatus('Upload a screenshot first.');
+          return;
+        }
+        setStatus('Gemini is reading the photo...');
+        try {
+          const response = await fetch('/api/extract', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image: screenshot })
+          });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error || 'AI extraction failed.');
+          applyParsedTransaction(data);
+          $('ocr').value = JSON.stringify(data, null, 2);
+          setStatus(`Gemini filled the record. Confidence ${Math.round((data.confidence || 0) * 100)}%. Please review before saving.`);
+        } catch (error) {
+          setStatus(error.message || 'Gemini could not read this screenshot.');
+        }
+      }
+      function removeTx(id) {
+        state.txs = state.txs.filter((tx) => tx.id !== id);
+        saveState();
+        render();
+      }
+      window.removeTx = removeTx;
+      document.querySelectorAll('[data-tab]').forEach((btn) => btn.addEventListener('click', () => setTab(btn.dataset.tab)));
+      ['upload', 'takePhoto', 'chooseImage'].forEach((id) => $(id).addEventListener('click', () => $('file').click()));
+      $('file').addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          screenshot = reader.result;
+          $('previewImg').src = screenshot;
+          $('preview').style.display = 'block';
+          setTab('capture');
+          setTimeout(readScreenshot, 250);
+        };
+        reader.readAsDataURL(file);
+      });
+      $('aiRead').addEventListener('click', aiReadScreenshot);
+      $('parse').addEventListener('click', parseText);
+      $('readImage').addEventListener('click', readScreenshot);
+      $('refreshPrices').addEventListener('click', refreshStockPrices);
+      $('saveLiff').addEventListener('click', () => {
+        state.liffId = $('liffId').value.trim();
+        saveState();
+        setLineStatus(state.liffId ? 'LIFF ID saved.' : 'LIFF ID cleared.');
+      });
+      $('initLiff').addEventListener('click', initializeLine);
+      $('lineLogin').addEventListener('click', lineLogin);
+      $('lineLogout').addEventListener('click', lineLogout);
+      ['shares', 'price', 'stockValue', 'fee'].forEach((id) => $(id).addEventListener('input', updateDraftTotal));
+      $('currency').addEventListener('change', updateDraftTotal);
+      $('displayCurrency').addEventListener('change', () => {
+        state.displayCurrency = $('displayCurrency').value;
+        saveState();
+        render();
+      });
+      $('save').addEventListener('click', () => {
+        const tx = {
+          id: crypto.randomUUID(),
+          symbol: $('symbol').value.trim().toUpperCase(),
+          side: $('side').value,
+          date: $('date').value,
+          shares: Number($('shares').value),
+          price: Number($('price').value),
+          stockValue: Number($('stockValue').value) || 0,
+          currency: $('currency').value,
+          fee: Number($('fee').value) || 0,
+          screenshot
+        };
+        if (!tx.symbol || !tx.shares || !tx.price) return;
+        state.txs.unshift(tx);
+        saveState();
+        ['symbol', 'shares', 'price', 'stockValue'].forEach((id) => $(id).value = '');
+        $('fee').value = '';
+        $('ocr').value = '';
+        screenshot = '';
+        $('preview').style.display = 'none';
+        render();
+        setTab('records');
+      });
+      render();
+      renderLineProfile();
+      setTab('overview');
+      refreshFxRate();
+      refreshStockPrices();
+      if (state.liffId) initializeLine();
+    </script>
+  </body>
+</html>
