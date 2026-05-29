@@ -82,7 +82,7 @@
         <button class="icon-btn" aria-label="Settings">⚙</button>
         <div>
           <h1>DCA Ledger</h1>
-          <p>LINE web app prototype</p>
+          <p>Make DCA Great Again!</p>
         </div>
         <div class="account-menu">
           <button class="account-btn" id="accountButton" aria-label="Login with LINE"><span>Login with Line</span><img id="headerAvatar" alt="" /></button>
@@ -200,12 +200,7 @@
         quoteMeta: { source: 'Seed', updatedAt: '' },
         liffId: DEFAULT_LIFF_ID,
         lineProfile: null,
-        txs: [
-          { id: crypto.randomUUID(), symbol: 'KTB', side: 'buy', date: '2026-05-15', shares: 1000, price: 17.2, fee: 12.34, currency: 'THB' },
-          { id: crypto.randomUUID(), symbol: 'KBANK', side: 'buy', date: '2026-05-08', shares: 200, price: 138.6, fee: 18.5, currency: 'THB' },
-          { id: crypto.randomUUID(), symbol: 'PTT', side: 'buy', date: '2026-04-25', shares: 800, price: 33.45, fee: 10.2, currency: 'THB' },
-          { id: crypto.randomUUID(), symbol: 'KTB', side: 'buy', date: '2026-04-12', shares: 700, price: 16.8, fee: 9.1, currency: 'THB' }
-        ]
+        txs: []
       };
       let state = JSON.parse(localStorage.getItem(key) || 'null') || seed;
       state.displayCurrency ||= 'THB';
@@ -215,6 +210,11 @@
       state.liffId = state.liffId && state.liffId.includes('-') ? state.liffId : DEFAULT_LIFF_ID;
       state.lineProfile ||= null;
       state.txs = state.txs.map((tx) => ({ currency: 'THB', stockValue: 0, ...tx }));
+      if (!state.lineProfile?.userId && !state.clearedPreLoginDemoData) {
+        state.txs = [];
+        state.clearedPreLoginDemoData = true;
+        localStorage.setItem(key, JSON.stringify(state));
+      }
       let screenshot = '';
       const $ = (id) => document.getElementById(id);
       const money = (v, currency = 'THB') => new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number.isFinite(v) ? v : 0);
