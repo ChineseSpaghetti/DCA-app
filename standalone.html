@@ -49,7 +49,6 @@
       .profile img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: #e7f3ee; }
       .profile strong, .profile span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .profile span { color: #667875; font-size: .9rem; }
-      .config-row { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: end; }
       .status { display: none; margin-top: 10px; color: #005f40; font-weight: 800; }
       .holdings, .transactions { display: grid; margin-top: 12px; }
       .holding, .tx { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 12px; padding: 13px 0; border-top: 1px solid #e5ece9; }
@@ -62,7 +61,7 @@
         .summary-grid, .form-grid, .capture-actions { grid-template-columns: 1fr; }
         .holding, .tx { grid-template-columns: 1fr; }
         .records-head { flex-direction: column; }
-        .login-card, .config-row { grid-template-columns: 1fr; flex-direction: column; align-items: stretch; }
+        .login-card { flex-direction: column; align-items: stretch; }
         .row { align-items: stretch; flex-direction: column; }
       }
     </style>
@@ -109,26 +108,21 @@
         <div class="records-head">
           <div>
             <h2>LINE account</h2>
-            <p>Connect LINE Login before using this as a real LIFF app.</p>
+            <p>Connect your LINE account.</p>
           </div>
-          <button class="secondary" id="lineLogin">LINE login</button>
+          <button class="secondary" id="lineLogin">Login with LINE</button>
         </div>
         <div class="login-card">
           <div class="profile">
             <img id="lineAvatar" alt="" />
             <div>
               <strong id="lineName">Not connected</strong>
-              <span id="lineUserId">Add a LIFF ID to enable login.</span>
+              <span id="lineUserId">Tap Login with LINE to continue.</span>
             </div>
           </div>
           <button class="secondary" id="lineLogout">Logout</button>
         </div>
-        <div class="config-row">
-          <label><span>LIFF ID</span><input id="liffId" placeholder="1234567890-AbCdEfGh" /></label>
-          <button class="secondary" id="saveLiff">Save</button>
-          <button class="secondary" id="initLiff">Initialize</button>
-        </div>
-        <p class="muted" id="lineStatus">LINE Login is optional for local testing.</p>
+        <p class="muted" id="lineStatus">LINE Login is ready.</p>
       </section>
 
       <section data-panel="capture overview">
@@ -229,8 +223,6 @@
       const num = (v) => new Intl.NumberFormat('en-US', { maximumFractionDigits: 4 }).format(Number.isFinite(v) ? v : 0);
       $('date').value = new Date().toISOString().slice(0, 10);
       $('displayCurrency').value = state.displayCurrency;
-      $('liffId').value = state.liffId;
-
       function saveState() { localStorage.setItem(key, JSON.stringify(state)); }
       function convertAmount(amount, fromCurrency, toCurrency = state.displayCurrency) {
         const value = Number(amount) || 0;
@@ -251,7 +243,7 @@
       function renderLineProfile() {
         const profile = state.lineProfile;
         $('lineName').textContent = profile?.displayName || 'Not connected';
-        $('lineUserId').textContent = profile?.userId ? `LINE user: ${profile.userId}` : (state.liffId ? 'Ready to initialize LIFF.' : 'Add a LIFF ID to enable login.');
+        $('lineUserId').textContent = profile?.userId ? `LINE user: ${profile.userId}` : 'Tap Login with LINE to continue.';
         $('lineAvatar').src = profile?.pictureUrl || '';
         $('lineAvatar').style.visibility = profile?.pictureUrl ? 'visible' : 'hidden';
       }
@@ -259,11 +251,7 @@
         $('lineStatus').textContent = message;
       }
       async function initializeLine() {
-        const liffId = $('liffId').value.trim();
-        if (!liffId) {
-          setLineStatus('Enter your LIFF ID first.');
-          return;
-        }
+        const liffId = DEFAULT_LIFF_ID;
         if (!window.liff) {
           setLineStatus('LIFF SDK is still loading. Try again in a moment.');
           return;
@@ -294,11 +282,7 @@
         }
       }
       async function lineLogin() {
-        const liffId = $('liffId').value.trim();
-        if (!liffId) {
-          setLineStatus('Enter and save your LIFF ID first.');
-          return;
-        }
+        const liffId = DEFAULT_LIFF_ID;
         if (!window.liff) {
           setLineStatus('LIFF SDK is still loading.');
           return;
@@ -589,12 +573,6 @@
       $('parse').addEventListener('click', parseText);
       $('readImage').addEventListener('click', readScreenshot);
       $('refreshPrices').addEventListener('click', refreshStockPrices);
-      $('saveLiff').addEventListener('click', () => {
-        state.liffId = $('liffId').value.trim();
-        saveState();
-        setLineStatus(state.liffId ? 'LIFF ID saved.' : 'LIFF ID cleared.');
-      });
-      $('initLiff').addEventListener('click', initializeLine);
       $('lineLogin').addEventListener('click', lineLogin);
       $('lineLogout').addEventListener('click', lineLogout);
       ['shares', 'price', 'stockValue', 'fee'].forEach((id) => $(id).addEventListener('input', updateDraftTotal));
@@ -633,7 +611,7 @@
       setTab('overview');
       refreshFxRate();
       refreshStockPrices();
-      if (state.liffId) initializeLine();
+      initializeLine();
     </script>
   </body>
 </html>
