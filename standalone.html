@@ -250,6 +250,54 @@
       function setLineStatus(message) {
         $('lineStatus').textContent = message;
       }
+      function cloudUserId() {
+        return state.lineProfile?.userId || '';
+      }
+      async function loadCloudTransactions() {
+        const lineUserId = cloudUserId();
+        if (!lineUserId) return;
+        setLineStatus('Loading cloud transactions...');
+        try {
+          const response = await fetch(`/api/transactions?lineUserId=${encodeURIComponent(lineUserId)}`);
+          const data = await response.json();
+          if (response.status === 501) {
+            setLineStatus('LINE connected. Cloud database is not configured yet; using this browser only.');
+            return;
+          }
+          if (!response.ok) throw new Error(data.error || 'Could not load transactions.');
+          state.txs = data.transactions || [];
+          saveState();
+          render();
+          refreshStockPrices();
+          setLineStatus('LINE connected. Cloud transactions loaded.');
+        } catch (error) {
+          setLineStatus(`LINE connected. Using local data because cloud load failed: ${error.message || ''}`);
+        }
+      }
+      async function saveCloudTransaction(tx) {
+        const lineUserId = cloudUserId();
+        if (!lineUserId) return null;
+        const response = await fetch(`/api/transactions?lineUserId=${encodeURIComponent(lineUserId)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(tx)
+        });
+        const data = await response.json();
+        if (response.status === 501) return null;
+        if (!response.ok) throw new Error(data.error || 'Could not save transaction.');
+        return data.transaction;
+      }
+      async function deleteCloudTransaction(id) {
+        const lineUserId = cloudUserId();
+        if (!lineUserId) return false;
+        const response = await fetch(`/api/transactions?lineUserId=${encodeURIComponent(lineUserId)}&id=${encodeURIComponent(id)}`, {
+          method: 'DELETE'
+        });
+        const data = await response.json().catch(() => ({}));
+        if (response.status === 501) return false;
+        if (!response.ok) throw new Error(data.error || 'Could not delete transaction.');
+        return true;
+      }
       async function initializeLine() {
         const liffId = DEFAULT_LIFF_ID;
         if (!window.liff) {
@@ -277,6 +325,7 @@
           saveState();
           renderLineProfile();
           setLineStatus(liff.isInClient() ? 'Connected inside LINE.' : 'Connected in external browser.');
+          await loadCloudTransactions();
         } catch (error) {
           setLineStatus(error.message || 'LINE initialization failed. Check LIFF ID and endpoint URL.');
         }
@@ -549,10 +598,19 @@
           setStatus(error.message || 'Gemini could not read this screenshot.');
         }
       }
-      function removeTx(id) {
+      async function removeTx(id) {
+        const previous = [...state.txs];
         state.txs = state.txs.filter((tx) => tx.id !== id);
         saveState();
         render();
+        try {
+          await deleteCloudTransaction(id);
+        } catch (error) {
+          state.txs = previous;
+          saveState();
+          render();
+          setLineStatus(error.message || 'Could not delete from cloud.');
+        }
       }
       window.removeTx = removeTx;
       document.querySelectorAll('[data-tab]').forEach((btn) => btn.addEventListener('click', () => setTab(btn.dataset.tab)));
@@ -583,7 +641,7 @@
         saveState();
         render();
       });
-      $('save').addEventListener('click', () => {
+      $('save').addEventListener('click', async () => {
         const tx = {
           id: crypto.randomUUID(),
           symbol: $('symbol').value.trim().toUpperCase(),
@@ -597,15 +655,22 @@
           screenshot
         };
         if (!tx.symbol || !tx.shares || !tx.price) return;
-        state.txs.unshift(tx);
-        saveState();
-        ['symbol', 'shares', 'price', 'stockValue'].forEach((id) => $(id).value = '');
-        $('fee').value = '';
-        $('ocr').value = '';
-        screenshot = '';
-        $('preview').style.display = 'none';
-        render();
-        setTab('records');
+        try {
+          const cloudTx = await saveCloudTransaction(tx);
+          state.txs.unshift(cloudTx || tx);
+          saveState();
+          ['symbol', 'shares', 'price', 'stockValue'].forEach((id) => $(id).value = '');
+          $('fee').value = '';
+          $('ocr').value = '';
+          screenshot = '';
+          $('preview').style.display = 'none';
+          render();
+          refreshStockPrices();
+          setTab('records');
+          setLineStatus(cloudTx ? 'Transaction saved to cloud.' : 'Transaction saved in this browser.');
+        } catch (error) {
+          setLineStatus(error.message || 'Could not save transaction.');
+        }
       });
       render();
       renderLineProfile();
