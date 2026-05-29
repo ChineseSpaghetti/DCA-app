@@ -108,16 +108,14 @@
         header { grid-template-columns: 44px minmax(0, 1fr) 132px; gap: 10px; }
         .account-btn { width: 132px; padding: 0 10px; font-size: .88rem; }
         .account-btn.logged-in { width: 44px; }
+        .summary { padding: 20px; }
+        .summary-top { display: grid; grid-template-columns: 1fr; gap: 14px; }
+        .summary-top label { width: min(180px, 100%); min-width: 0; justify-self: start; }
         .summary-grid, .form-grid, .capture-actions { grid-template-columns: 1fr; }
         .holding, .tx { grid-template-columns: 1fr; }
         .records-head { flex-direction: column; }
         .account-popover { right: -4px; }
         .row { align-items: stretch; flex-direction: column; }
-      }
-      @media (max-width: 420px) {
-        .summary { padding: 20px; }
-        .summary-top { display: grid; grid-template-columns: 1fr; gap: 14px; }
-        .summary-top label { width: min(150px, 100%); min-width: 0; justify-self: start; }
       }
     </style>
   </head>
