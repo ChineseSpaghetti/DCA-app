@@ -13,14 +13,16 @@
       button, input, select, textarea { font: inherit; }
       button { cursor: pointer; }
       .app { width: min(100%, 880px); margin: 0 auto; padding: 22px 16px 98px; }
-      header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+      header { display: grid; grid-template-columns: 150px minmax(0, 1fr) 150px; align-items: center; gap: 12px; margin-bottom: 16px; }
+      header > div:nth-child(2) { text-align: center; }
       h1, h2, p { margin: 0; }
       h1 { font-size: clamp(2rem, 8vw, 3rem); line-height: 1; }
       header p, section p, label span, .muted { color: #667875; }
       .icon-btn { width: 44px; height: 44px; border: 0; border-radius: 8px; background: #e7f3ee; color: #006b49; font-weight: 900; }
-      .account-menu { position: relative; }
-      .account-btn { width: 44px; height: 44px; border: 0; border-radius: 8px; background: #e7f3ee; color: #006b49; font-weight: 900; display: grid; place-items: center; overflow: hidden; }
+      .account-menu { position: relative; justify-self: end; }
+      .account-btn { width: 150px; min-height: 44px; border: 0; border-radius: 8px; background: #e7f3ee; color: #006b49; font-weight: 900; display: grid; place-items: center; overflow: hidden; padding: 0 12px; white-space: nowrap; }
       .account-btn.logged-in { padding: 0; border-radius: 50%; background: #dbeee7; }
+      .account-btn.logged-in { width: 44px; height: 44px; min-height: 44px; }
       .account-btn img { width: 100%; height: 100%; object-fit: cover; display: none; }
       .account-btn.logged-in img { display: block; }
       .account-btn.logged-in span { display: none; }
@@ -62,6 +64,9 @@
       .bottom { position: fixed; left: 50%; bottom: 0; transform: translateX(-50%); width: min(100%, 880px); display: grid; grid-template-columns: repeat(3, 1fr); padding: 10px 12px; border: 1px solid #dce6e2; border-bottom: 0; border-radius: 24px 24px 0 0; background: rgba(255,255,255,.95); }
       .bottom button { min-height: 54px; border: 0; background: transparent; color: #405351; font-weight: 850; }
       @media (max-width: 640px) {
+        header { grid-template-columns: 44px minmax(0, 1fr) 132px; gap: 10px; }
+        .account-btn { width: 132px; padding: 0 10px; font-size: .88rem; }
+        .account-btn.logged-in { width: 44px; }
         .summary-grid, .form-grid, .capture-actions { grid-template-columns: 1fr; }
         .holding, .tx { grid-template-columns: 1fr; }
         .records-head { flex-direction: column; }
@@ -80,7 +85,7 @@
           <p>LINE web app prototype</p>
         </div>
         <div class="account-menu">
-          <button class="account-btn" id="accountButton" aria-label="Login with LINE"><span>LINE</span><img id="headerAvatar" alt="" /></button>
+          <button class="account-btn" id="accountButton" aria-label="Login with LINE"><span>Login with Line</span><img id="headerAvatar" alt="" /></button>
           <div class="account-popover" id="accountPopover">
             <div>
               <strong id="accountName">Not connected</strong>
@@ -118,7 +123,7 @@
         <button data-tab="records">Records</button>
       </nav>
 
-      <section data-panel="capture overview">
+      <section data-panel="capture">
         <h2>Capture trade screenshot</h2>
         <p>Attach proof of each buy or sell, then review the numbers before saving.</p>
         <div class="capture-actions">
@@ -128,7 +133,7 @@
         <div class="preview" id="preview"><img id="previewImg" alt="Uploaded transaction screenshot" /></div>
       </section>
 
-      <section data-panel="capture overview">
+      <section data-panel="capture">
         <h2>Review transaction</h2>
         <p>Upload a screenshot to read ราคาที่ได้จริง, จำนวนหุ้น, and มูลค่าหุ้น.</p>
         <label style="margin-top: 14px;">
