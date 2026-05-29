@@ -18,6 +18,16 @@
       h1 { font-size: clamp(2rem, 8vw, 3rem); line-height: 1; }
       header p, section p, label span, .muted { color: #667875; }
       .icon-btn { width: 44px; height: 44px; border: 0; border-radius: 8px; background: #e7f3ee; color: #006b49; font-weight: 900; }
+      .account-menu { position: relative; }
+      .account-btn { width: 44px; height: 44px; border: 0; border-radius: 8px; background: #e7f3ee; color: #006b49; font-weight: 900; display: grid; place-items: center; overflow: hidden; }
+      .account-btn.logged-in { padding: 0; border-radius: 50%; background: #dbeee7; }
+      .account-btn img { width: 100%; height: 100%; object-fit: cover; display: none; }
+      .account-btn.logged-in img { display: block; }
+      .account-btn.logged-in span { display: none; }
+      .account-popover { position: absolute; top: 54px; right: 0; z-index: 20; width: min(260px, calc(100vw - 32px)); display: none; padding: 14px; border: 1px solid #dbe5e1; border-radius: 8px; background: white; box-shadow: 0 18px 42px rgba(24, 58, 52, .16); }
+      .account-popover.open { display: grid; gap: 12px; }
+      .account-popover strong, .account-popover span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .account-popover span { color: #667875; font-size: .9rem; }
       .summary { color: white; border-radius: 8px; padding: 24px; background: linear-gradient(135deg, #004d35, #002a22); box-shadow: 0 18px 42px rgba(0, 77, 53, .22); }
       .summary .big { display: block; margin: 8px 0; font-size: clamp(2.2rem, 10vw, 3.35rem); font-weight: 900; }
       .summary-top { display: flex; align-items: start; justify-content: space-between; gap: 14px; }
@@ -43,12 +53,6 @@
       .primary { border: 0; border-radius: 8px; color: white; background: #005f40; padding: 13px 18px; font-weight: 900; }
       .secondary { border: 1px solid #b9cac5; border-radius: 8px; color: #15302e; background: white; padding: 10px 13px; font-weight: 800; }
       .records-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-      .login-panel { display: grid; gap: 12px; }
-      .login-card { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px; border: 1px solid #dbe5e1; border-radius: 8px; background: #f8fbfa; }
-      .profile { display: flex; align-items: center; gap: 12px; min-width: 0; }
-      .profile img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: #e7f3ee; }
-      .profile strong, .profile span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-      .profile span { color: #667875; font-size: .9rem; }
       .status { display: none; margin-top: 10px; color: #005f40; font-weight: 800; }
       .holdings, .transactions { display: grid; margin-top: 12px; }
       .holding, .tx { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 12px; padding: 13px 0; border-top: 1px solid #e5ece9; }
@@ -61,7 +65,7 @@
         .summary-grid, .form-grid, .capture-actions { grid-template-columns: 1fr; }
         .holding, .tx { grid-template-columns: 1fr; }
         .records-head { flex-direction: column; }
-        .login-card { flex-direction: column; align-items: stretch; }
+        .account-popover { right: -4px; }
         .row { align-items: stretch; flex-direction: column; }
       }
     </style>
@@ -75,7 +79,17 @@
           <h1>DCA Ledger</h1>
           <p>LINE web app prototype</p>
         </div>
-        <button class="icon-btn" id="upload" aria-label="Upload">↑</button>
+        <div class="account-menu">
+          <button class="account-btn" id="accountButton" aria-label="Login with LINE"><span>LINE</span><img id="headerAvatar" alt="" /></button>
+          <div class="account-popover" id="accountPopover">
+            <div>
+              <strong id="accountName">Not connected</strong>
+              <span id="accountHint">Login with LINE to sync records.</span>
+            </div>
+            <button class="secondary" id="accountLogin">Login with LINE</button>
+            <button class="secondary" id="accountLogout">Logout</button>
+          </div>
+        </div>
       </header>
 
       <div class="summary">
@@ -103,27 +117,6 @@
         <button data-tab="capture">Capture</button>
         <button data-tab="records">Records</button>
       </nav>
-
-      <section class="login-panel" data-panel="overview">
-        <div class="records-head">
-          <div>
-            <h2>LINE account</h2>
-            <p>Connect your LINE account.</p>
-          </div>
-          <button class="secondary" id="lineLogin">Login with LINE</button>
-        </div>
-        <div class="login-card">
-          <div class="profile">
-            <img id="lineAvatar" alt="" />
-            <div>
-              <strong id="lineName">Not connected</strong>
-              <span id="lineUserId">Tap Login with LINE to continue.</span>
-            </div>
-          </div>
-          <button class="secondary" id="lineLogout">Logout</button>
-        </div>
-        <p class="muted" id="lineStatus">Tap Login with LINE when you are ready.</p>
-      </section>
 
       <section data-panel="capture overview">
         <h2>Capture trade screenshot</h2>
@@ -242,13 +235,17 @@
       }
       function renderLineProfile() {
         const profile = state.lineProfile;
-        $('lineName').textContent = profile?.displayName || 'Not connected';
-        $('lineUserId').textContent = profile?.userId ? `LINE user: ${profile.userId}` : 'Tap Login with LINE to continue.';
-        $('lineAvatar').src = profile?.pictureUrl || '';
-        $('lineAvatar').style.visibility = profile?.pictureUrl ? 'visible' : 'hidden';
+        const connected = Boolean(profile?.userId);
+        $('accountName').textContent = profile?.displayName || 'Not connected';
+        $('accountHint').textContent = connected ? `LINE user: ${profile.userId}` : 'Login with LINE to sync records.';
+        $('headerAvatar').src = profile?.pictureUrl || '';
+        $('accountButton').classList.toggle('logged-in', connected);
+        $('accountButton').setAttribute('aria-label', connected ? 'Open account menu' : 'Login with LINE');
+        $('accountLogin').style.display = connected ? 'none' : '';
+        $('accountLogout').style.display = connected ? '' : 'none';
       }
       function setLineStatus(message) {
-        $('lineStatus').textContent = message;
+        $('accountHint').textContent = message || (state.lineProfile?.userId ? `LINE user: ${state.lineProfile.userId}` : 'Login with LINE to sync records.');
       }
       function cloudUserId() {
         return state.lineProfile?.userId || '';
@@ -400,7 +397,7 @@
         $('currentValue').textContent = money(value, displayCurrency);
         $('profit').textContent = money(pl, displayCurrency);
         $('profit').className = pl >= 0 ? 'positive' : 'negative';
-        $('fxNote').textContent = `FX: 1 USD = ${num(Number(state.fx?.rate) || 0)} THB · ${state.fx?.source || 'Fallback'} ${state.fx?.date || ''}`;
+        $('fxNote').textContent = `FX: 1 USD = ${num(Number(state.fx?.rate) || 0)} THB`;
         $('quoteNote').textContent = `Prices: ${state.quoteMeta?.source || 'Saved'} ${state.quoteMeta?.updatedAt || ''}`;
         $('holdings').innerHTML = rows.map((r) => `
           <article class="holding">
@@ -614,7 +611,7 @@
       }
       window.removeTx = removeTx;
       document.querySelectorAll('[data-tab]').forEach((btn) => btn.addEventListener('click', () => setTab(btn.dataset.tab)));
-      ['upload', 'takePhoto', 'chooseImage'].forEach((id) => $(id).addEventListener('click', () => $('file').click()));
+      ['takePhoto', 'chooseImage'].forEach((id) => $(id).addEventListener('click', () => $('file').click()));
       $('file').addEventListener('change', (event) => {
         const file = event.target.files[0];
         if (!file) return;
@@ -632,8 +629,20 @@
       $('parse').addEventListener('click', parseText);
       $('readImage').addEventListener('click', readScreenshot);
       $('refreshPrices').addEventListener('click', refreshStockPrices);
-      $('lineLogin').addEventListener('click', lineLogin);
-      $('lineLogout').addEventListener('click', lineLogout);
+      $('accountLogin').addEventListener('click', lineLogin);
+      $('accountLogout').addEventListener('click', lineLogout);
+      $('accountButton').addEventListener('click', () => {
+        if (state.lineProfile?.userId) {
+          $('accountPopover').classList.toggle('open');
+        } else {
+          lineLogin();
+        }
+      });
+      document.addEventListener('click', (event) => {
+        if (!event.target.closest('.account-menu')) {
+          $('accountPopover').classList.remove('open');
+        }
+      });
       ['shares', 'price', 'stockValue', 'fee'].forEach((id) => $(id).addEventListener('input', updateDraftTotal));
       $('currency').addEventListener('change', updateDraftTotal);
       $('displayCurrency').addEventListener('change', () => {
