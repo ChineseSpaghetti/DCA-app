@@ -200,15 +200,6 @@
       <section data-panel="capture">
         <h2>Review transaction</h2>
         <p>Upload a screenshot to read ราคาที่ได้จริง, จำนวนหุ้น, and มูลค่าหุ้น.</p>
-        <label style="margin-top: 14px;">
-          <span>Screenshot text</span>
-          <textarea id="ocr" placeholder="Paste brokerage receipt text here..."></textarea>
-        </label>
-        <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;">
-          <button class="secondary" id="aiRead">Gemini read photo</button>
-          <button class="secondary" id="readImage">Read screenshot</button>
-          <button class="secondary" id="parse">Parse text</button>
-        </div>
         <div class="status" id="ocrStatus"></div>
         <div class="form-grid">
           <label><span>Symbol</span><input id="symbol" placeholder="KTB" /></label>
@@ -621,8 +612,8 @@
           $('quoteNote').textContent = `Prices: could not refresh. ${error.message || ''}`;
         }
       }
-      function parseText() {
-        const parsed = parseBrokerText($('ocr').value);
+      function parseText(rawText) {
+        const parsed = parseBrokerText(rawText);
         if (parsed.symbol) $('symbol').value = parsed.symbol;
         if (parsed.side) $('side').value = parsed.side;
         if (parsed.currency) $('currency').value = parsed.currency;
@@ -719,14 +710,13 @@
           setStatus('OCR library is still loading. Try again in a moment.');
           return;
         }
-        setStatus('Reading screenshot...');
+        setStatus('Gemini could not read the photo. Trying OCR...');
         try {
           const result = await Tesseract.recognize(screenshot, 'tha+eng');
-          $('ocr').value = result.data.text;
-          parseText();
-          setStatus('Screenshot read. Please review before saving.');
+          parseText(result.data.text);
+          setStatus('OCR filled the record. Please review before saving.');
         } catch (error) {
-          setStatus('Could not read automatically. Paste OCR text or enter values manually.');
+          setStatus('Gemini and OCR could not read this screenshot. Enter the values manually.');
         }
       }
       function applyParsedTransaction(parsed) {
@@ -756,10 +746,9 @@
           const data = await response.json();
           if (!response.ok) throw new Error(data.error || 'AI extraction failed.');
           applyParsedTransaction(data);
-          $('ocr').value = JSON.stringify(data, null, 2);
           setStatus(`Gemini filled the record. Confidence ${Math.round((data.confidence || 0) * 100)}%. Please review before saving.`);
         } catch (error) {
-          setStatus(error.message || 'Gemini could not read this screenshot.');
+          await readScreenshot();
         }
       }
       function setupSwipeRows() {
@@ -838,13 +827,10 @@
           $('previewImg').src = screenshot;
           $('preview').style.display = 'block';
           setTab('capture');
-          setTimeout(readScreenshot, 250);
+          setTimeout(aiReadScreenshot, 250);
         };
         reader.readAsDataURL(file);
       });
-      $('aiRead').addEventListener('click', aiReadScreenshot);
-      $('parse').addEventListener('click', parseText);
-      $('readImage').addEventListener('click', readScreenshot);
       $('refreshPrices').addEventListener('click', refreshStockPrices);
       $('accountLogin').addEventListener('click', lineLogin);
       $('accountLogout').addEventListener('click', lineLogout);
@@ -889,7 +875,6 @@
           saveState();
           ['symbol', 'shares', 'price', 'stockValue'].forEach((id) => $(id).value = '');
           $('fee').value = '';
-          $('ocr').value = '';
           editingTxId = '';
           $('save').textContent = 'Save transaction';
           screenshot = '';

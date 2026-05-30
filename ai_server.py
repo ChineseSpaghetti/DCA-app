@@ -151,7 +151,7 @@ def extract_transaction(api_key, image_data_url):
     }
 
     request = urllib.request.Request(
-        f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}",
+        f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={api_key}",
         data=json.dumps(payload).encode("utf-8"),
         headers={
             "Content-Type": "application/json",
