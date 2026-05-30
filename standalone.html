@@ -274,6 +274,8 @@
       }
       let screenshot = '';
       let editingTxId = '';
+      let extractionRunId = 0;
+      let extractionController = null;
       const $ = (id) => document.getElementById(id);
       const money = (v, currency = 'THB') => new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number.isFinite(v) ? v : 0);
       const num = (v) => new Intl.NumberFormat('en-US', { maximumFractionDigits: 4 }).format(Number.isFinite(v) ? v : 0);
@@ -701,7 +703,18 @@
         $('ocrStatus').textContent = message;
         $('ocrStatus').style.display = message ? 'block' : 'none';
       }
-      async function readScreenshot() {
+      function resetCapture() {
+        extractionRunId += 1;
+        extractionController?.abort();
+        extractionController = null;
+        screenshot = '';
+        $('file').value = '';
+        $('previewImg').src = '';
+        $('preview').style.display = 'none';
+        setStatus('');
+      }
+      async function readScreenshot(runId = extractionRunId) {
+        if (runId !== extractionRunId) return;
         if (!screenshot) {
           setStatus('Upload a screenshot first.');
           return;
@@ -713,9 +726,11 @@
         setStatus('Gemini could not read the photo. Trying OCR...');
         try {
           const result = await Tesseract.recognize(screenshot, 'tha+eng');
+          if (runId !== extractionRunId) return;
           parseText(result.data.text);
           setStatus('OCR filled the record. Please review before saving.');
         } catch (error) {
+          if (runId !== extractionRunId) return;
           setStatus('Gemini and OCR could not read this screenshot. Enter the values manually.');
         }
       }
@@ -731,24 +746,33 @@
         if (fee) $('fee').value = Number(fee.toFixed(6));
         updateDraftTotal();
       }
-      async function aiReadScreenshot() {
+      async function aiReadScreenshot(runId = extractionRunId) {
+        if (runId !== extractionRunId) return;
         if (!screenshot) {
           setStatus('Upload a screenshot first.');
           return;
         }
+        const controller = new AbortController();
+        extractionController?.abort();
+        extractionController = controller;
         setStatus('Gemini is reading the photo...');
         try {
           const response = await fetch('/api/extract', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ image: screenshot })
+            body: JSON.stringify({ image: screenshot }),
+            signal: controller.signal
           });
           const data = await response.json();
+          if (runId !== extractionRunId) return;
           if (!response.ok) throw new Error(data.error || 'AI extraction failed.');
           applyParsedTransaction(data);
           setStatus(`Gemini filled the record. Confidence ${Math.round((data.confidence || 0) * 100)}%. Please review before saving.`);
         } catch (error) {
-          await readScreenshot();
+          if (runId !== extractionRunId || error.name === 'AbortError') return;
+          await readScreenshot(runId);
+        } finally {
+          if (extractionController === controller) extractionController = null;
         }
       }
       function setupSwipeRows() {
@@ -817,17 +841,25 @@
       window.removeTx = removeTx;
       window.editTx = editTx;
       document.querySelectorAll('[data-tab]').forEach((btn) => btn.addEventListener('click', () => setTab(btn.dataset.tab)));
-      ['takePhoto', 'chooseImage'].forEach((id) => $(id).addEventListener('click', () => $('file').click()));
+      ['takePhoto', 'chooseImage'].forEach((id) => $(id).addEventListener('click', () => {
+        $('file').value = '';
+        $('file').click();
+      }));
       $('file').addEventListener('change', (event) => {
         const file = event.target.files[0];
         if (!file) return;
+        const runId = ++extractionRunId;
+        extractionController?.abort();
+        extractionController = null;
+        setStatus('');
         const reader = new FileReader();
         reader.onload = () => {
+          if (runId !== extractionRunId) return;
           screenshot = reader.result;
           $('previewImg').src = screenshot;
           $('preview').style.display = 'block';
           setTab('capture');
-          setTimeout(aiReadScreenshot, 250);
+          setTimeout(() => aiReadScreenshot(runId), 250);
         };
         reader.readAsDataURL(file);
       });
@@ -877,8 +909,7 @@
           $('fee').value = '';
           editingTxId = '';
           $('save').textContent = 'Save transaction';
-          screenshot = '';
-          $('preview').style.display = 'none';
+          resetCapture();
           render();
           refreshStockPrices();
           setTab('records');
@@ -895,6 +926,7 @@
           setLineStatus(`Saved in this browser. Cloud sync will retry after reconnecting: ${error.message || ''}`);
           editingTxId = '';
           $('save').textContent = 'Save transaction';
+          resetCapture();
         }
       });
       render();
