@@ -20,7 +20,7 @@
       button:active { transform: translateY(1px) scale(.99); }
       button:focus-visible { outline: 3px solid rgba(0, 123, 85, .28); outline-offset: 2px; }
       .app { width: min(100%, 880px); margin: 0 auto; padding: 22px 16px 98px; }
-      header { display: grid; grid-template-columns: 150px minmax(0, 1fr) 150px; align-items: center; gap: 12px; margin-bottom: 16px; }
+      header { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: center; gap: 12px; margin-bottom: 16px; }
       header > div:nth-child(2) { text-align: center; }
       h1, h2, p { margin: 0; }
       h1 { font-size: clamp(2rem, 8vw, 3rem); line-height: 1; }
@@ -30,18 +30,25 @@
       .theme-toggle { font-size: 1.15rem; line-height: 1; }
       .icon-btn:hover { background: #cfeade; color: #004d35; box-shadow: 0 8px 18px rgba(0, 107, 73, .12); }
       .icon-btn:active { background: #b8decc; }
-      :root[data-theme="dark"] .icon-btn, :root[data-theme="dark"] .account-btn { background: #15342b; color: #84e1b0; }
-      :root[data-theme="dark"] .icon-btn:hover, :root[data-theme="dark"] .account-btn:hover { background: #1b4639; color: #b6f2d0; box-shadow: 0 8px 18px rgba(0, 0, 0, .22); }
-      :root[data-theme="dark"] .icon-btn:active, :root[data-theme="dark"] .account-btn:active { background: #225645; }
-      .account-menu { position: relative; justify-self: end; }
-      .account-btn { width: 150px; min-height: 44px; border: 0; border-radius: 8px; background: #e7f3ee; color: #006b49; font-weight: 900; display: grid; place-items: center; overflow: hidden; padding: 0 12px; white-space: nowrap; }
+      :root[data-theme="dark"] .icon-btn { background: #15342b; color: #84e1b0; }
+      :root[data-theme="dark"] .icon-btn:hover { background: #1b4639; color: #b6f2d0; box-shadow: 0 8px 18px rgba(0, 0, 0, .22); }
+      :root[data-theme="dark"] .icon-btn:active { background: #225645; }
+      .account-menu { position: relative; width: 44px; justify-self: end; }
+      .account-btn { width: 44px; height: 44px; border: 0; border-radius: 50%; background: #e7f3ee; color: #006b49; display: grid; place-items: center; overflow: hidden; padding: 0; }
       .account-btn:hover { background: #cfeade; color: #004d35; box-shadow: 0 8px 18px rgba(0, 107, 73, .12); }
       .account-btn:active { background: #b8decc; }
+      :root[data-theme="dark"] .account-btn { background: #15342b; color: #84e1b0; }
+      :root[data-theme="dark"] .account-btn:hover { background: #1b4639; color: #b6f2d0; }
+      .account-placeholder { width: 23px; height: 23px; display: block; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; }
+      .line-login-action { width: 152px; height: 44px; border: 0; border-radius: 0; background: transparent; display: grid; place-items: center; overflow: hidden; padding: 0; }
+      .line-login-art { width: 152px; height: 44px; display: block; background: center / 152px 44px no-repeat url("assets/line-login/btn_login_base.png"); }
+      .line-login-action:hover .line-login-art { background-image: url("assets/line-login/btn_login_hover.png"); }
+      .line-login-action:active .line-login-art { background-image: url("assets/line-login/btn_login_press.png"); }
       .account-btn.logged-in { padding: 0; border-radius: 50%; background: #dbeee7; }
       .account-btn.logged-in { width: 44px; height: 44px; min-height: 44px; }
       .account-btn img { width: 100%; height: 100%; object-fit: cover; display: none; }
       .account-btn.logged-in img { display: block; }
-      .account-btn.logged-in span { display: none; }
+      .account-btn.logged-in .account-placeholder { display: none; }
       .account-popover { position: absolute; top: 54px; right: 0; z-index: 20; width: min(340px, calc(100vw - 32px)); display: none; padding: 14px; border: 1px solid #dbe5e1; border-radius: 8px; background: white; box-shadow: 0 18px 42px rgba(24, 58, 52, .16); }
       :root[data-theme="dark"] .account-popover { border-color: #25483f; background: #10221e; }
       .account-popover.open { display: grid; gap: 12px; }
@@ -93,7 +100,16 @@
       .records-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
       .status { display: none; margin-top: 10px; color: #005f40; font-weight: 800; }
       .holdings, .transactions { display: grid; margin-top: 12px; }
-      .holding, .tx { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 12px; padding: 13px 0; border-top: 1px solid #e5ece9; }
+      .holding { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 12px; padding: 13px 0; border-top: 1px solid #e5ece9; }
+      .swipe-row { position: relative; min-height: 66px; overflow: hidden; border-top: 1px solid #e5ece9; background: #f3f7f5; touch-action: pan-y; }
+      :root[data-theme="dark"] .swipe-row { border-color: #25483f; background: #0d1d1a; }
+      .swipe-actions { position: absolute; inset: 0; display: flex; justify-content: space-between; }
+      .swipe-action { width: 72px; border: 0; color: white; display: grid; place-items: center; }
+      .swipe-action svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; }
+      .swipe-delete { background: #d83232; }
+      .swipe-edit { background: #087b55; }
+      .tx { position: relative; z-index: 1; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 10px; min-height: 66px; padding: 11px 10px; background: rgba(255,255,255,.98); transition: transform .18s ease; will-change: transform; }
+      :root[data-theme="dark"] .tx { background: #10221e; }
       .holding strong, .tx strong { display: block; }
       .positive { color: #00854d; }
       .negative { color: #d72828; }
@@ -105,16 +121,14 @@
       :root[data-theme="dark"] .bottom button:hover { color: #84e1b0; background: #17352d; }
       .bottom button:active { background: #dff1e8; }
       @media (max-width: 640px) {
-        header { grid-template-columns: 44px minmax(0, 1fr) 132px; gap: 10px; }
-        .account-btn { width: 132px; padding: 0 10px; font-size: .88rem; }
-        .account-btn.logged-in { width: 44px; }
+        header { grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 10px; }
         .summary { padding: 20px; }
         .summary-top { display: grid; grid-template-columns: 1fr; gap: 14px; }
         .summary-top label { width: min(180px, 100%); min-width: 0; justify-self: start; }
         .summary-grid, .form-grid, .capture-actions { grid-template-columns: 1fr; }
-        .holding, .tx { grid-template-columns: 1fr; }
+        .holding { grid-template-columns: 1fr; }
         .records-head { flex-direction: column; }
-        .account-popover { right: -4px; }
+        .account-popover { right: 0; width: min(200px, calc(100vw - 32px)); }
         .row { align-items: stretch; flex-direction: column; }
       }
     </style>
@@ -129,13 +143,19 @@
           <p>Make DCA Great Again!</p>
         </div>
         <div class="account-menu">
-          <button class="account-btn" id="accountButton" aria-label="Login with LINE"><span>Login with Line</span><img id="headerAvatar" alt="" /></button>
+          <button class="account-btn" id="accountButton" aria-label="Open account menu">
+            <svg class="account-placeholder" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M20 21a8 8 0 0 0-16 0"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <img id="headerAvatar" alt="" />
+          </button>
           <div class="account-popover" id="accountPopover">
             <div>
               <strong id="accountName">Not connected</strong>
               <span id="accountHint">Login with LINE to sync records.</span>
             </div>
-            <button class="secondary" id="accountLogin">Login with LINE</button>
+            <button class="line-login-action" id="accountLogin" aria-label="Log in with LINE"><span class="line-login-art" aria-hidden="true"></span></button>
             <button class="secondary" id="accountLogout">Logout</button>
           </div>
         </div>
@@ -197,11 +217,11 @@
           <label><span>Date</span><input id="date" type="date" /></label>
           <label><span>Shares</span><input id="shares" inputmode="decimal" placeholder="1000" /></label>
           <label><span>Price / ราคาที่ได้จริง</span><input id="price" inputmode="decimal" placeholder="299.05" /></label>
-          <label><span>Stock value / มูลค่าหุ้น</span><input id="stockValue" inputmode="decimal" placeholder="39.94" /></label>
+          <label><span>Stock value / มูลค่าหุ้น</span><input id="stockValue" inputmode="decimal" placeholder="0.00" readonly /></label>
           <label><span>Fee</span><input id="fee" inputmode="decimal" placeholder="12.34" /></label>
         </div>
         <div class="row">
-          <div><span class="muted">Total amount</span><strong id="draftTotal">฿0.00</strong></div>
+          <div><span class="muted">Total amount: </span><strong id="draftTotal">฿0.00</strong></div>
           <button class="primary" id="save">Save transaction</button>
         </div>
       </section>
@@ -262,6 +282,7 @@
         localStorage.setItem(key, JSON.stringify(state));
       }
       let screenshot = '';
+      let editingTxId = '';
       const $ = (id) => document.getElementById(id);
       const money = (v, currency = 'THB') => new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number.isFinite(v) ? v : 0);
       const num = (v) => new Intl.NumberFormat('en-US', { maximumFractionDigits: 4 }).format(Number.isFinite(v) ? v : 0);
@@ -284,9 +305,9 @@
         const lineUserId = cloudUserId();
         if (!lineUserId) return;
         try {
-          await fetch(`/api/preferences?lineUserId=${encodeURIComponent(lineUserId)}`, {
+          await fetch('/api/preferences', {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: cloudHeaders({ 'Content-Type': 'application/json' }),
             body: JSON.stringify({ theme: state.theme })
           });
         } catch {}
@@ -295,7 +316,7 @@
         const lineUserId = cloudUserId();
         if (!lineUserId) return;
         try {
-          const response = await fetch(`/api/preferences?lineUserId=${encodeURIComponent(lineUserId)}`);
+          const response = await fetch('/api/preferences', { headers: cloudHeaders() });
           const data = await response.json();
           if (!response.ok || response.status === 501) return;
           if (data.preferences?.theme) {
@@ -329,7 +350,7 @@
         $('accountHint').textContent = connected ? `LINE user: ${profile.userId}` : 'Login with LINE to sync records.';
         $('headerAvatar').src = profile?.pictureUrl || '';
         $('accountButton').classList.toggle('logged-in', connected);
-        $('accountButton').setAttribute('aria-label', connected ? 'Open account menu' : 'Login with LINE');
+        $('accountButton').setAttribute('aria-label', 'Open account menu');
         $('accountLogin').style.display = connected ? 'none' : '';
         $('accountLogout').style.display = connected ? '' : 'none';
       }
@@ -339,12 +360,27 @@
       function cloudUserId() {
         return state.lineProfile?.userId || '';
       }
+      function cloudHeaders(extra = {}) {
+        const accessToken = window.liff?.getAccessToken?.();
+        return accessToken ? { Authorization: `Bearer ${accessToken}`, ...extra } : extra;
+      }
       async function loadCloudTransactions() {
         const lineUserId = cloudUserId();
         if (!lineUserId) return;
         setLineStatus('Loading cloud transactions...');
         try {
-          const response = await fetch(`/api/transactions?lineUserId=${encodeURIComponent(lineUserId)}`);
+          if (state.cloudOwnerId && state.cloudOwnerId !== lineUserId) {
+            state.txs = [];
+          }
+          const pending = state.txs.filter((tx) => tx.cloudSynced === false);
+          for (const tx of pending) {
+            if (tx.pendingAction === 'update') {
+              await updateCloudTransaction(tx);
+            } else {
+              await saveCloudTransaction(tx);
+            }
+          }
+          const response = await fetch('/api/transactions', { headers: cloudHeaders() });
           const data = await response.json();
           if (response.status === 501) {
             setLineStatus('LINE connected. Cloud database is not configured yet; using this browser only.');
@@ -352,6 +388,7 @@
           }
           if (!response.ok) throw new Error(data.error || 'Could not load transactions.');
           state.txs = data.transactions || [];
+          state.cloudOwnerId = lineUserId;
           saveState();
           render();
           refreshStockPrices();
@@ -363,9 +400,9 @@
       async function saveCloudTransaction(tx) {
         const lineUserId = cloudUserId();
         if (!lineUserId) return null;
-        const response = await fetch(`/api/transactions?lineUserId=${encodeURIComponent(lineUserId)}`, {
+        const response = await fetch('/api/transactions', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: cloudHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify(tx)
         });
         const data = await response.json();
@@ -373,11 +410,25 @@
         if (!response.ok) throw new Error(data.error || 'Could not save transaction.');
         return data.transaction;
       }
+      async function updateCloudTransaction(tx) {
+        const lineUserId = cloudUserId();
+        if (!lineUserId) return null;
+        const response = await fetch(`/api/transactions?id=${encodeURIComponent(tx.id)}`, {
+          method: 'PUT',
+          headers: cloudHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify(tx)
+        });
+        const data = await response.json();
+        if (response.status === 501) return null;
+        if (!response.ok) throw new Error(data.error || 'Could not update transaction.');
+        return data.transaction;
+      }
       async function deleteCloudTransaction(id) {
         const lineUserId = cloudUserId();
         if (!lineUserId) return false;
-        const response = await fetch(`/api/transactions?lineUserId=${encodeURIComponent(lineUserId)}&id=${encodeURIComponent(id)}`, {
-          method: 'DELETE'
+        const response = await fetch(`/api/transactions?id=${encodeURIComponent(id)}`, {
+          method: 'DELETE',
+          headers: cloudHeaders()
         });
         const data = await response.json().catch(() => ({}));
         if (response.status === 501) return false;
@@ -449,6 +500,7 @@
         } finally {
           state.lineProfile = null;
           state.txs = [];
+          state.cloudOwnerId = '';
           state.clearedPreLoginDemoData = true;
           saveState();
           renderLineProfile();
@@ -510,11 +562,21 @@
             <span class="${r.pl >= 0 ? 'positive' : 'negative'}">${money(r.pl, r.currency || 'THB')} (${r.pct.toFixed(2)}%)</span>
           </article>`).join('');
         $('transactions').innerHTML = state.txs.map((tx) => `
-          <article class="tx">
-            <div><strong>${tx.symbol} · ${tx.side.toUpperCase()}</strong><span class="muted">${tx.date} · ${num(tx.shares)} shares at ${money(tx.price, tx.currency || 'THB')}</span></div>
-            <span>${money(Number(tx.stockValue) || tx.shares * tx.price, tx.currency || 'THB')}</span>
-            <button class="secondary" onclick="removeTx('${tx.id}')">Remove</button>
-          </article>`).join('');
+          <div class="swipe-row" data-tx-id="${tx.id}">
+            <div class="swipe-actions">
+              <button class="swipe-action swipe-delete" type="button" aria-label="Delete ${tx.symbol}" onclick="removeTx('${tx.id}')">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v5"></path><path d="M14 11v5"></path></svg>
+              </button>
+              <button class="swipe-action swipe-edit" type="button" aria-label="Edit ${tx.symbol}" onclick="editTx('${tx.id}')">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+              </button>
+            </div>
+            <article class="tx">
+              <div><strong>${tx.symbol} · ${tx.side.toUpperCase()}</strong><span class="muted">${tx.date} · ${num(tx.shares)} shares at ${money(tx.price, tx.currency || 'THB')}</span></div>
+              <span>${money(Number(tx.stockValue) || tx.shares * tx.price, tx.currency || 'THB')}</span>
+            </article>
+          </div>`).join('');
+        setupSwipeRows();
         updateDraftTotal();
       }
       function setTab(tab) {
@@ -522,7 +584,8 @@
         document.querySelectorAll('[data-panel]').forEach((panel) => panel.style.display = panel.dataset.panel.includes(tab) ? '' : 'none');
       }
       function updateDraftTotal() {
-        const stockValue = Number($('stockValue').value) || (Number($('shares').value) || 0) * (Number($('price').value) || 0);
+        const stockValue = (Number($('shares').value) || 0) * (Number($('price').value) || 0);
+        $('stockValue').value = stockValue ? String(Number(stockValue.toFixed(8))) : '';
         $('draftTotal').textContent = money(stockValue + (Number($('fee').value) || 0), $('currency').value);
       }
       async function refreshFxRate() {
@@ -699,6 +762,55 @@
           setStatus(error.message || 'Gemini could not read this screenshot.');
         }
       }
+      function setupSwipeRows() {
+        document.querySelectorAll('.swipe-row').forEach((row) => {
+          const card = row.querySelector('.tx');
+          let startX = 0;
+          let currentX = 0;
+          let dragging = false;
+          const settle = () => {
+            const offset = currentX > 36 ? 72 : currentX < -36 ? -72 : 0;
+            currentX = offset;
+            card.style.transform = `translateX(${offset}px)`;
+          };
+          card.addEventListener('pointerdown', (event) => {
+            startX = event.clientX - currentX;
+            dragging = true;
+            card.setPointerCapture(event.pointerId);
+            card.style.transition = 'none';
+          });
+          card.addEventListener('pointermove', (event) => {
+            if (!dragging) return;
+            currentX = Math.max(-72, Math.min(72, event.clientX - startX));
+            card.style.transform = `translateX(${currentX}px)`;
+          });
+          card.addEventListener('pointerup', () => {
+            dragging = false;
+            card.style.transition = '';
+            settle();
+          });
+          card.addEventListener('pointercancel', () => {
+            dragging = false;
+            card.style.transition = '';
+            settle();
+          });
+        });
+      }
+      function editTx(id) {
+        const tx = state.txs.find((item) => item.id === id);
+        if (!tx) return;
+        editingTxId = id;
+        $('symbol').value = tx.symbol;
+        $('side').value = tx.side;
+        $('currency').value = tx.currency || 'THB';
+        $('date').value = tx.date;
+        $('shares').value = tx.shares;
+        $('price').value = tx.price;
+        $('fee').value = tx.fee || '';
+        $('save').textContent = 'Update transaction';
+        updateDraftTotal();
+        setTab('capture');
+      }
       async function removeTx(id) {
         const previous = [...state.txs];
         state.txs = state.txs.filter((tx) => tx.id !== id);
@@ -714,6 +826,7 @@
         }
       }
       window.removeTx = removeTx;
+      window.editTx = editTx;
       document.querySelectorAll('[data-tab]').forEach((btn) => btn.addEventListener('click', () => setTab(btn.dataset.tab)));
       ['takePhoto', 'chooseImage'].forEach((id) => $(id).addEventListener('click', () => $('file').click()));
       $('file').addEventListener('change', (event) => {
@@ -737,18 +850,14 @@
       $('accountLogout').addEventListener('click', lineLogout);
       $('themeToggle').addEventListener('click', toggleTheme);
       $('accountButton').addEventListener('click', () => {
-        if (state.lineProfile?.userId) {
-          $('accountPopover').classList.toggle('open');
-        } else {
-          lineLogin();
-        }
+        $('accountPopover').classList.toggle('open');
       });
       document.addEventListener('click', (event) => {
         if (!event.target.closest('.account-menu')) {
           $('accountPopover').classList.remove('open');
         }
       });
-      ['shares', 'price', 'stockValue', 'fee'].forEach((id) => $(id).addEventListener('input', updateDraftTotal));
+      ['shares', 'price', 'fee'].forEach((id) => $(id).addEventListener('input', updateDraftTotal));
       $('currency').addEventListener('change', updateDraftTotal);
       $('displayCurrency').addEventListener('change', () => {
         state.displayCurrency = $('displayCurrency').value;
@@ -763,19 +872,26 @@
           date: $('date').value,
           shares: Number($('shares').value),
           price: Number($('price').value),
-          stockValue: Number($('stockValue').value) || 0,
+          stockValue: (Number($('shares').value) || 0) * (Number($('price').value) || 0),
           currency: $('currency').value,
           fee: Number($('fee').value) || 0,
           screenshot
         };
         if (!tx.symbol || !tx.shares || !tx.price) return;
+        if (editingTxId) tx.id = editingTxId;
         try {
-          const cloudTx = await saveCloudTransaction(tx);
-          state.txs.unshift(cloudTx || tx);
+          const cloudTx = editingTxId ? await updateCloudTransaction(tx) : await saveCloudTransaction(tx);
+          if (editingTxId) {
+            state.txs = state.txs.map((item) => item.id === editingTxId ? (cloudTx || { ...tx, cloudSynced: false, pendingAction: 'update' }) : item);
+          } else {
+            state.txs.unshift(cloudTx || { ...tx, cloudSynced: false, pendingAction: 'create' });
+          }
           saveState();
           ['symbol', 'shares', 'price', 'stockValue'].forEach((id) => $(id).value = '');
           $('fee').value = '';
           $('ocr').value = '';
+          editingTxId = '';
+          $('save').textContent = 'Save transaction';
           screenshot = '';
           $('preview').style.display = 'none';
           render();
@@ -783,7 +899,17 @@
           setTab('records');
           setLineStatus(cloudTx ? 'Transaction saved to cloud.' : 'Transaction saved in this browser.');
         } catch (error) {
-          setLineStatus(error.message || 'Could not save transaction.');
+          if (editingTxId) {
+            state.txs = state.txs.map((item) => item.id === editingTxId ? { ...tx, cloudSynced: false, pendingAction: 'update' } : item);
+          } else {
+            state.txs.unshift({ ...tx, cloudSynced: false, pendingAction: 'create' });
+          }
+          saveState();
+          render();
+          setTab('records');
+          setLineStatus(`Saved in this browser. Cloud sync will retry after reconnecting: ${error.message || ''}`);
+          editingTxId = '';
+          $('save').textContent = 'Save transaction';
         }
       });
       render();

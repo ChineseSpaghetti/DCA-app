@@ -1,3 +1,5 @@
+import { requireLineUser } from './_line-auth.js';
+
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const TABLE = 'user_preferences';
@@ -34,13 +36,9 @@ export default async function handler(request, response) {
     return;
   }
 
-  const lineUserId = String(request.query.lineUserId || '').trim();
-  if (!lineUserId) {
-    response.status(400).json({ error: 'Missing lineUserId.' });
-    return;
-  }
-
   try {
+    const lineUserId = (await requireLineUser(request)).userId;
+
     if (request.method === 'GET') {
       const rows = await supabaseFetch(`${TABLE}?line_user_id=eq.${encodeURIComponent(lineUserId)}&select=line_user_id,theme`);
       response.status(200).json({ preferences: rows[0] || null });
@@ -60,6 +58,6 @@ export default async function handler(request, response) {
 
     response.status(405).json({ error: 'Method not allowed.' });
   } catch (error) {
-    response.status(500).json({ error: error.message || 'Preference API failed.' });
+    response.status(error.status || 500).json({ error: error.message || 'Preference API failed.' });
   }
 }
