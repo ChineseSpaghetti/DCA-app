@@ -54,6 +54,15 @@ function fromDb(row) {
   };
 }
 
+function withoutClientId(tx) {
+  const { client_id, ...legacyTx } = tx;
+  return legacyTx;
+}
+
+function isLegacySchemaError(error) {
+  return /client_id|on conflict|unique or exclusion constraint/i.test(error.message || '');
+}
+
 async function supabaseFetch(path, options = {}) {
   const response = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     ...options,
@@ -88,11 +97,21 @@ export default async function handler(request, response) {
         response.status(400).json({ error: 'Symbol, shares, and price are required.' });
         return;
       }
-      const rows = await supabaseFetch(`${TABLE}?on_conflict=line_user_id,client_id`, {
-        method: 'POST',
-        headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
-        body: JSON.stringify(tx),
-      });
+      let rows;
+      try {
+        rows = await supabaseFetch(`${TABLE}?on_conflict=line_user_id,client_id`, {
+          method: 'POST',
+          headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
+          body: JSON.stringify(tx),
+        });
+      } catch (error) {
+        if (!isLegacySchemaError(error)) throw error;
+        rows = await supabaseFetch(TABLE, {
+          method: 'POST',
+          headers: { Prefer: 'return=representation' },
+          body: JSON.stringify(withoutClientId(tx)),
+        });
+      }
       response.status(200).json({ transaction: fromDb(rows[0]) });
       return;
     }
@@ -108,11 +127,22 @@ export default async function handler(request, response) {
         response.status(400).json({ error: 'Symbol, shares, and price are required.' });
         return;
       }
-      const rows = await supabaseFetch(`${TABLE}?id=eq.${encodeURIComponent(id)}&line_user_id=eq.${encodeURIComponent(lineUserId)}`, {
-        method: 'PATCH',
-        headers: { Prefer: 'return=representation' },
-        body: JSON.stringify(tx),
-      });
+      const path = `${TABLE}?id=eq.${encodeURIComponent(id)}&line_user_id=eq.${encodeURIComponent(lineUserId)}`;
+      let rows;
+      try {
+        rows = await supabaseFetch(path, {
+          method: 'PATCH',
+          headers: { Prefer: 'return=representation' },
+          body: JSON.stringify(tx),
+        });
+      } catch (error) {
+        if (!isLegacySchemaError(error)) throw error;
+        rows = await supabaseFetch(path, {
+          method: 'PATCH',
+          headers: { Prefer: 'return=representation' },
+          body: JSON.stringify(withoutClientId(tx)),
+        });
+      }
       if (!rows[0]) {
         response.status(404).json({ error: 'Transaction not found.' });
         return;
