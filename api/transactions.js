@@ -1,3 +1,5 @@
+import { requireLineUser } from './_line-auth.js';
+
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const TABLE = 'transactions';
@@ -15,8 +17,14 @@ function headers(extra = {}) {
   };
 }
 
+function uuid(value) {
+  const clean = String(value || '').trim();
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(clean) ? clean : undefined;
+}
+
 function cleanTransaction(lineUserId, input) {
   return {
+    client_id: uuid(input.clientId || input.id),
     line_user_id: lineUserId,
     symbol: String(input.symbol || '').trim().toUpperCase(),
     side: input.side === 'sell' ? 'sell' : 'buy',
@@ -41,6 +49,8 @@ function fromDb(row) {
     stockValue: Number(row.stock_value) || 0,
     fee: Number(row.fee) || 0,
     createdAt: row.created_at,
+    clientId: row.client_id,
+    cloudSynced: true,
   };
 }
 
@@ -63,13 +73,9 @@ export default async function handler(request, response) {
     return;
   }
 
-  const lineUserId = String(request.query.lineUserId || '').trim();
-  if (!lineUserId) {
-    response.status(400).json({ error: 'Missing lineUserId.' });
-    return;
-  }
-
   try {
+    const lineUserId = (await requireLineUser(request)).userId;
+
     if (request.method === 'GET') {
       const rows = await supabaseFetch(`${TABLE}?line_user_id=eq.${encodeURIComponent(lineUserId)}&order=date.desc,created_at.desc&select=*`);
       response.status(200).json({ transactions: rows.map(fromDb) });
@@ -82,11 +88,35 @@ export default async function handler(request, response) {
         response.status(400).json({ error: 'Symbol, shares, and price are required.' });
         return;
       }
-      const rows = await supabaseFetch(TABLE, {
+      const rows = await supabaseFetch(`${TABLE}?on_conflict=line_user_id,client_id`, {
         method: 'POST',
+        headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
+        body: JSON.stringify(tx),
+      });
+      response.status(200).json({ transaction: fromDb(rows[0]) });
+      return;
+    }
+
+    if (request.method === 'PUT') {
+      const id = String(request.query.id || '').trim();
+      if (!id) {
+        response.status(400).json({ error: 'Missing transaction id.' });
+        return;
+      }
+      const tx = cleanTransaction(lineUserId, request.body || {});
+      if (!tx.symbol || !tx.shares || !tx.price) {
+        response.status(400).json({ error: 'Symbol, shares, and price are required.' });
+        return;
+      }
+      const rows = await supabaseFetch(`${TABLE}?id=eq.${encodeURIComponent(id)}&line_user_id=eq.${encodeURIComponent(lineUserId)}`, {
+        method: 'PATCH',
         headers: { Prefer: 'return=representation' },
         body: JSON.stringify(tx),
       });
+      if (!rows[0]) {
+        response.status(404).json({ error: 'Transaction not found.' });
+        return;
+      }
       response.status(200).json({ transaction: fromDb(rows[0]) });
       return;
     }
@@ -106,6 +136,6 @@ export default async function handler(request, response) {
 
     response.status(405).json({ error: 'Method not allowed.' });
   } catch (error) {
-    response.status(500).json({ error: error.message || 'Transaction API failed.' });
+    response.status(error.status || 500).json({ error: error.message || 'Transaction API failed.' });
   }
 }
