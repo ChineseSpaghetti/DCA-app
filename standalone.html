@@ -94,6 +94,10 @@
       .primary { border: 0; border-radius: 8px; color: white; background: #005f40; padding: 13px 18px; font-weight: 900; }
       .primary:hover { background: #007a53; box-shadow: 0 10px 22px rgba(0, 95, 64, .22); }
       .primary:active { background: #004d35; }
+      .primary:disabled { cursor: wait; opacity: .82; }
+      .button-loading { display: inline-flex; align-items: center; gap: 9px; }
+      .button-spinner { width: 17px; height: 17px; border: 2px solid rgba(255,255,255,.42); border-top-color: white; border-radius: 50%; animation: button-spin .72s linear infinite; }
+      @keyframes button-spin { to { transform: rotate(360deg); } }
       .secondary { border: 1px solid #b9cac5; border-radius: 8px; color: #15302e; background: white; padding: 10px 13px; font-weight: 800; }
       .secondary:hover { border-color: #6aa98e; background: #eef8f4; color: #005f40; box-shadow: 0 8px 18px rgba(24, 58, 52, .08); }
       :root[data-theme="dark"] .secondary:hover, :root[data-theme="dark"] .capture-actions button:hover { border-color: #5a917d; background: #17352d; color: #b6f2d0; }
@@ -711,6 +715,12 @@
         $('ocrStatus').textContent = message;
         $('ocrStatus').style.display = message ? 'block' : 'none';
       }
+      function setSaveLoading(loading, label = 'Save transaction') {
+        $('save').disabled = loading;
+        $('save').innerHTML = loading
+          ? `<span class="button-loading"><span class="button-spinner" aria-hidden="true"></span>${label}</span>`
+          : label;
+      }
       function resetCapture() {
         extractionRunId += 1;
         extractionController?.abort();
@@ -907,6 +917,7 @@
         };
         if (!tx.symbol || !tx.shares || !tx.price) return;
         if (editingTxId) tx.id = editingTxId;
+        setSaveLoading(true, editingTxId ? 'Updating transaction' : 'Saving transaction');
         try {
           const cloudTx = editingTxId ? await updateCloudTransaction(tx) : await saveCloudTransaction(tx);
           if (editingTxId) {
@@ -937,6 +948,8 @@
           editingTxId = '';
           $('save').textContent = 'Save transaction';
           resetCapture();
+        } finally {
+          setSaveLoading(false);
         }
       });
       render();

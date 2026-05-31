@@ -45,7 +45,7 @@ export default async function handler(request, response) {
       propertyOrdering: ['symbol', 'side', 'currency', 'price', 'shares', 'stockValue', 'commission', 'vat', 'fee', 'date', 'dateConfidence', 'confidence', 'notes'],
     };
 
-    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`, {
+    const requestOptions = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -66,7 +66,11 @@ export default async function handler(request, response) {
           temperature: 0,
         },
       }),
-    });
+    };
+    let geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`, requestOptions);
+    if (geminiResponse.status === 404) {
+      geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`, requestOptions);
+    }
 
     const geminiData = await geminiResponse.json();
     if (!geminiResponse.ok) {

@@ -156,21 +156,26 @@ def extract_transaction(api_key, image_data_url):
         },
     }
 
-    request = urllib.request.Request(
-        f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={api_key}",
-        data=json.dumps(payload).encode("utf-8"),
-        headers={
-            "Content-Type": "application/json",
-        },
-        method="POST",
-    )
+    data = None
+    for model in ["gemini-3.1-flash-lite", "gemini-2.5-flash-lite"]:
+        request = urllib.request.Request(
+            f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}",
+            data=json.dumps(payload).encode("utf-8"),
+            headers={
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
 
-    try:
-        with urllib.request.urlopen(request, timeout=60) as response:
-            data = json.loads(response.read().decode("utf-8"))
-    except urllib.error.HTTPError as exc:
-        detail = exc.read().decode("utf-8")
-        raise RuntimeError(f"Gemini API error {exc.code}: {detail}") from exc
+        try:
+            with urllib.request.urlopen(request, timeout=60) as response:
+                data = json.loads(response.read().decode("utf-8"))
+                break
+        except urllib.error.HTTPError as exc:
+            detail = exc.read().decode("utf-8")
+            if exc.code == 404 and model == "gemini-3.1-flash-lite":
+                continue
+            raise RuntimeError(f"Gemini API error {exc.code}: {detail}") from exc
 
     text = ""
     candidates = data.get("candidates", [])
