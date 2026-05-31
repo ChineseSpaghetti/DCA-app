@@ -19,7 +19,7 @@
       }
       button:active { transform: translateY(1px) scale(.99); }
       button:focus-visible { outline: 3px solid rgba(0, 123, 85, .28); outline-offset: 2px; }
-      .app { width: min(100%, 880px); margin: 0 auto; padding: 22px 16px 98px; }
+      .app { width: min(100%, 880px); margin: 0 auto; padding: 22px 16px 132px; }
       header { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: center; gap: 12px; margin-bottom: 16px; }
       header > div:nth-child(2) { text-align: center; }
       h1, h2, p { margin: 0; }
@@ -113,15 +113,15 @@
       .swipe-action svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; }
       .swipe-delete { background: #d83232; }
       .swipe-edit { background: #087b55; }
-      .tx { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 66px; padding: 11px 10px; background: rgba(255,255,255,.98); transition: transform .18s ease; will-change: transform; }
+      .tx { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 66px; padding: 11px 10px; background: #fff; transition: transform .18s ease; will-change: transform; }
       :root[data-theme="dark"] .tx { background: #10221e; }
       .tx > div { min-width: 0; }
       .tx .muted { overflow-wrap: anywhere; }
       .holding strong, .tx strong { display: block; }
       .positive { color: #00854d; }
       .negative { color: #d72828; }
-      .bottom { position: fixed; left: 50%; bottom: 0; transform: translateX(-50%); width: min(100%, 880px); display: grid; grid-template-columns: repeat(3, 1fr); padding: 10px 12px; border: 1px solid #dce6e2; border-bottom: 0; border-radius: 24px 24px 0 0; background: rgba(255,255,255,.95); }
-      :root[data-theme="dark"] .bottom { border-color: #25483f; background: rgba(10, 23, 20, .95); }
+      .bottom { position: fixed; left: 50%; bottom: 0; z-index: 30; transform: translateX(-50%); width: min(100%, 880px); display: grid; grid-template-columns: repeat(3, 1fr); padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); border: 1px solid #dce6e2; border-bottom: 0; border-radius: 24px 24px 0 0; background: #fff; box-shadow: 0 -10px 24px rgba(24,58,52,.12); }
+      :root[data-theme="dark"] .bottom { border-color: #25483f; background: #0a1714; box-shadow: 0 -10px 24px rgba(0,0,0,.28); }
       .bottom button { min-height: 54px; border: 0; background: transparent; color: #405351; font-weight: 850; }
       .bottom button:hover { color: #005f40; background: #eef8f4; border-radius: 8px; }
       :root[data-theme="dark"] .bottom button { color: #b9cbc6; }
