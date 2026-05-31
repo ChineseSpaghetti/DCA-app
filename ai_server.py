@@ -91,6 +91,7 @@ def extract_transaction(api_key, image_data_url):
             "vat": {"type": "NUMBER"},
             "fee": {"type": "NUMBER"},
             "date": {"type": "STRING"},
+            "dateConfidence": {"type": "NUMBER"},
             "confidence": {"type": "NUMBER"},
             "notes": {"type": "STRING"},
         },
@@ -105,6 +106,7 @@ def extract_transaction(api_key, image_data_url):
             "vat",
             "fee",
             "date",
+            "dateConfidence",
             "confidence",
             "notes",
         ],
@@ -119,6 +121,7 @@ def extract_transaction(api_key, image_data_url):
             "vat",
             "fee",
             "date",
+            "dateConfidence",
             "confidence",
             "notes",
         ],
@@ -135,7 +138,10 @@ def extract_transaction(api_key, image_data_url):
                             "It may contain Thai labels. Map ราคาที่ได้จริง to price, "
                             "จำนวนหุ้น to shares, มูลค่าหุ้น to stockValue, "
                             "ค่าคอมมิชชั่น to commission, VAT to vat, and fee = commission + vat. "
-                            "Return numbers only, no currency symbols. Convert Thai Buddhist years to ISO yyyy-mm-dd. "
+                            "Return numbers only, no currency symbols. For date, use the transaction execution or order date only, "
+                            "not settlement date, posting date, or visible clock time. Convert Thai Buddhist years to ISO yyyy-mm-dd. "
+                            "Return dateConfidence from 0 to 1. If the transaction date is missing or ambiguous, "
+                            "return an empty date and dateConfidence below 0.8. "
                             "If uncertain, use empty string for text fields and 0 for numbers, and explain in notes."
                         ),
                     },

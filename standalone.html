@@ -82,12 +82,13 @@
       .capture-actions button:active { background: #dff1e8; }
       .preview { display: none; position: relative; height: 180px; margin-top: 14px; border: 1px solid #dce5e2; border-radius: 8px; overflow: hidden; background: #eef5f2; }
       .preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
-      textarea, input, select { width: 100%; min-height: 50px; border: 1px solid #d5dfdc; border-radius: 8px; padding: 12px 14px; outline: none; background: white; }
+      textarea, input, select { width: 100%; min-width: 0; max-width: 100%; min-height: 50px; border: 1px solid #d5dfdc; border-radius: 8px; padding: 12px 14px; outline: none; background: white; }
       :root[data-theme="dark"] textarea, :root[data-theme="dark"] input, :root[data-theme="dark"] select { border-color: #42685d; background: #0d1d1a; color: #edf7f3; }
       textarea:focus, input:focus, select:focus { border-color: #007b55; box-shadow: 0 0 0 4px rgba(0,123,85,.1); }
       textarea { min-height: 82px; resize: vertical; }
       label { display: grid; gap: 7px; }
-      .form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 16px; }
+      .form-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 16px; }
+      .form-grid > label, input[type="date"] { min-width: 0; max-width: 100%; }
       .row { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 16px; padding: 16px; border-radius: 8px; background: #e8f7ef; }
       :root[data-theme="dark"] .row { background: #14352d; }
       .primary { border: 0; border-radius: 8px; color: white; background: #005f40; padding: 13px 18px; font-weight: 900; }
@@ -108,8 +109,10 @@
       .swipe-action svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; }
       .swipe-delete { background: #d83232; }
       .swipe-edit { background: #087b55; }
-      .tx { position: relative; z-index: 1; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 10px; min-height: 66px; padding: 11px 10px; background: rgba(255,255,255,.98); transition: transform .18s ease; will-change: transform; }
+      .tx { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 66px; padding: 11px 10px; background: rgba(255,255,255,.98); transition: transform .18s ease; will-change: transform; }
       :root[data-theme="dark"] .tx { background: #10221e; }
+      .tx > div { min-width: 0; }
+      .tx .muted { overflow-wrap: anywhere; }
       .holding strong, .tx strong { display: block; }
       .positive { color: #00854d; }
       .negative { color: #d72828; }
@@ -619,7 +622,7 @@
         if (parsed.symbol) $('symbol').value = parsed.symbol;
         if (parsed.side) $('side').value = parsed.side;
         if (parsed.currency) $('currency').value = parsed.currency;
-        if (parsed.date) $('date').value = parsed.date;
+        if (validIsoDate(parsed.date)) $('date').value = parsed.date;
         if (parsed.shares) $('shares').value = parsed.shares;
         if (parsed.price) $('price').value = parsed.price;
         if (parsed.stockValue) $('stockValue').value = parsed.stockValue;
@@ -630,6 +633,11 @@
         if (!value) return '';
         const match = String(value).replace(/,/g, '').match(/\d+(?:\.\d+)?/);
         return match ? match[0] : '';
+      }
+      function validIsoDate(value) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ''))) return false;
+        const date = new Date(`${value}T00:00:00Z`);
+        return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
       }
       function numbersIn(value) {
         return (String(value).replace(/,/g, '').match(/\d+(?:\.\d+)?/g) || []).map(Number);
@@ -738,13 +746,15 @@
         if (parsed.symbol) $('symbol').value = String(parsed.symbol).toUpperCase();
         if (parsed.side && parsed.side !== 'unknown') $('side').value = parsed.side;
         if (parsed.currency) $('currency').value = parsed.currency;
-        if (parsed.date) $('date').value = parsed.date;
+        const dateIsReliable = validIsoDate(parsed.date) && Number(parsed.dateConfidence) >= 0.8;
+        if (dateIsReliable) $('date').value = parsed.date;
         if (parsed.shares) $('shares').value = parsed.shares;
         if (parsed.price) $('price').value = parsed.price;
         if (parsed.stockValue) $('stockValue').value = parsed.stockValue;
         const fee = Number(parsed.fee) || (Number(parsed.commission) || 0) + (Number(parsed.vat) || 0);
         if (fee) $('fee').value = Number(fee.toFixed(6));
         updateDraftTotal();
+        return dateIsReliable ? '' : ' Review the transaction date manually.';
       }
       async function aiReadScreenshot(runId = extractionRunId) {
         if (runId !== extractionRunId) return;
@@ -766,8 +776,8 @@
           const data = await response.json();
           if (runId !== extractionRunId) return;
           if (!response.ok) throw new Error(data.error || 'AI extraction failed.');
-          applyParsedTransaction(data);
-          setStatus(`Gemini filled the record. Confidence ${Math.round((data.confidence || 0) * 100)}%. Please review before saving.`);
+          const dateWarning = applyParsedTransaction(data);
+          setStatus(`Gemini filled the record. Confidence ${Math.round((data.confidence || 0) * 100)}%. Please review before saving.${dateWarning}`);
         } catch (error) {
           if (runId !== extractionRunId || error.name === 'AbortError') return;
           await readScreenshot(runId);
