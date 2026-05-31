@@ -446,7 +446,7 @@
         saveState();
         setLineStatus('Initializing LINE...');
         try {
-          await liff.init({ liffId, withLoginOnExternalBrowser: true });
+          await liff.init({ liffId });
           if (!liff.isLoggedIn()) {
             state.lineProfile = null;
             saveState();
@@ -477,7 +477,7 @@
         }
         setLineStatus('Opening LINE Login...');
         try {
-          await liff.init({ liffId, withLoginOnExternalBrowser: true });
+          await liff.init({ liffId });
           if (!liff.isLoggedIn()) {
             liff.login({ redirectUri: location.href });
             return;
@@ -492,7 +492,7 @@
         try {
           if (window.liff) {
             try {
-              await liff.init({ liffId: DEFAULT_LIFF_ID, withLoginOnExternalBrowser: true });
+              await liff.init({ liffId: DEFAULT_LIFF_ID });
             } catch {}
             try {
               if (liff.isLoggedIn()) liff.logout();
