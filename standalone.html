@@ -103,6 +103,8 @@
       :root[data-theme="dark"] .secondary:hover, :root[data-theme="dark"] .capture-actions button:hover { border-color: #5a917d; background: #17352d; color: #b6f2d0; }
       .secondary:active { background: #dff1e8; }
       .records-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+      .portfolio-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+      .portfolio-actions select { width: auto; min-height: 44px; padding: 9px 34px 9px 12px; }
       .status { display: none; margin-top: 10px; color: #005f40; font-weight: 800; }
       .holdings, .transactions { display: grid; margin-top: 12px; }
       .holding { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 12px; padding: 13px 0; border-top: 1px solid #e5ece9; }
@@ -227,13 +229,15 @@
 
       <section data-panel="records overview">
         <div class="records-head">
-          <div>
-            <h2>Investment portfolio</h2>
-            <p>Average cost, quantity, value, and profit by symbol.</p>
-          </div>
+          <h2>Investment portfolio</h2>
+        </div>
+        <div class="portfolio-actions">
+          <select id="profitView" aria-label="Portfolio profit view">
+            <option value="unrealized">Unrealized P/L</option>
+            <option value="realized">Realized P/L</option>
+          </select>
           <button class="secondary" id="refreshPrices">Refresh prices</button>
         </div>
-        <p class="muted" id="quoteNote" style="margin-top: 10px;">Stock prices use saved values until refreshed.</p>
         <div class="holdings" id="holdings"></div>
       </section>
 
@@ -259,6 +263,7 @@
           PTT: { price: 31.5, currency: 'THB', source: 'Seed' }
         },
         displayCurrency: 'THB',
+        profitView: 'unrealized',
         fx: { base: 'USD', quote: 'THB', rate: 35, date: '', source: 'Fallback' },
         quoteMeta: { source: 'Seed', updatedAt: '' },
         theme: 'light',
@@ -268,6 +273,7 @@
       };
       let state = JSON.parse(localStorage.getItem(key) || 'null') || seed;
       state.displayCurrency ||= 'THB';
+      state.profitView = state.profitView === 'realized' ? 'realized' : 'unrealized';
       state.fx ||= seed.fx;
       state.prices ||= {};
       state.quoteMeta ||= { source: 'Saved', updatedAt: '' };
@@ -289,6 +295,7 @@
       const num = (v) => new Intl.NumberFormat('en-US', { maximumFractionDigits: 4 }).format(Number.isFinite(v) ? v : 0);
       $('date').value = new Date().toISOString().slice(0, 10);
       $('displayCurrency').value = state.displayCurrency;
+      $('profitView').value = state.profitView;
       applyTheme(state.theme);
       function saveState() { localStorage.setItem(key, JSON.stringify(state)); }
       function applyTheme(theme) {
@@ -554,11 +561,13 @@
       function render() {
         const rows = holdings();
         const displayCurrency = state.displayCurrency || 'THB';
+        const profitView = state.profitView === 'realized' ? 'realized' : 'unrealized';
         const cost = rows.reduce((s, r) => s + convertAmount(r.cost, r.currency, displayCurrency), 0);
         const value = rows.reduce((s, r) => s + convertAmount(r.currentValue, r.currency, displayCurrency), 0);
         const realized = rows.reduce((s, r) => s + convertAmount(r.realized, r.currency, displayCurrency), 0);
         const pl = value - cost;
         $('displayCurrency').value = displayCurrency;
+        $('profitView').value = profitView;
         $('portfolioValue').textContent = money(value, displayCurrency);
         $('costBase').textContent = `Average cost base ${money(cost, displayCurrency)}`;
         $('totalCost').textContent = money(cost, displayCurrency);
@@ -568,14 +577,14 @@
         $('realizedProfit').textContent = money(realized, displayCurrency);
         $('realizedProfit').className = realized >= 0 ? 'positive' : 'negative';
         $('fxNote').textContent = `FX: 1 USD = ${num(Number(state.fx?.rate) || 0)} THB`;
-        $('quoteNote').textContent = `Prices: ${state.quoteMeta?.source || 'Saved'} ${state.quoteMeta?.updatedAt || ''}`;
         $('holdings').innerHTML = rows.map((r) => `
           <article class="holding">
             <div><strong>${r.symbol}</strong><span class="muted">Avg ${money(r.avg, r.currency || 'THB')} · Qty ${num(r.quantity)} · Last ${money(r.currentPrice, r.currentPriceCurrency || r.currency || 'THB')}</span></div>
             <strong>${money(convertAmount(r.currentValue, r.currency || 'THB', displayCurrency), displayCurrency)}</strong>
             <div>
-              <span class="${r.pl >= 0 ? 'positive' : 'negative'}">Unrealized ${money(r.pl, r.currency || 'THB')} (${r.pct.toFixed(2)}%)</span>
-              <span class="${r.realized >= 0 ? 'positive' : 'negative'}">Realized ${money(r.realized, r.currency || 'THB')}</span>
+              ${profitView === 'realized'
+                ? `<span class="${r.realized >= 0 ? 'positive' : 'negative'}">Realized ${money(r.realized, r.currency || 'THB')}</span>`
+                : `<span class="${r.pl >= 0 ? 'positive' : 'negative'}">Unrealized ${money(r.pl, r.currency || 'THB')} (${r.pct.toFixed(2)}%)</span>`}
             </div>
           </article>`).join('');
         $('transactions').innerHTML = state.txs.map((tx) => `
@@ -620,7 +629,6 @@
       async function refreshStockPrices() {
         const rows = holdings();
         if (!rows.length) return;
-        $('quoteNote').textContent = 'Prices: refreshing...';
         const items = rows.map((row) => `${encodeURIComponent(row.symbol)}:${encodeURIComponent(row.currency || 'USD')}`).join(',');
         try {
           const response = await fetch(`/api/quotes?items=${items}`);
@@ -635,7 +643,7 @@
           saveState();
           render();
         } catch (error) {
-          $('quoteNote').textContent = `Prices: could not refresh. ${error.message || ''}`;
+          setLineStatus(`Could not refresh prices: ${error.message || ''}`);
         }
       }
       function parseText(rawText) {
@@ -916,6 +924,11 @@
       $('currency').addEventListener('change', updateDraftTotal);
       $('displayCurrency').addEventListener('change', () => {
         state.displayCurrency = $('displayCurrency').value;
+        saveState();
+        render();
+      });
+      $('profitView').addEventListener('change', () => {
+        state.profitView = $('profitView').value;
         saveState();
         render();
       });
