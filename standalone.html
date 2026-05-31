@@ -61,7 +61,7 @@
       .summary-top label { min-width: 128px; color: rgba(255,255,255,.76); font-size: .84rem; }
       .summary-top select { min-height: 42px; color: white; background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.25); }
       .fx-note { display: block; margin-top: 10px; color: rgba(255,255,255,.72); }
-      .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; border-top: 1px solid rgba(255,255,255,.24); margin-top: 18px; padding-top: 18px; }
+      .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; border-top: 1px solid rgba(255,255,255,.24); margin-top: 18px; padding-top: 18px; }
       .summary-grid span { display: block; color: rgba(255,255,255,.72); font-size: .88rem; }
       .tabs { display: grid; grid-template-columns: repeat(3, 1fr); margin: 18px 0 12px; border: 1px solid #dbe5e1; border-radius: 8px; background: white; overflow: hidden; }
       :root[data-theme="dark"] .tabs { border-color: #25483f; background: #10221e; }
@@ -118,6 +118,7 @@
       .tx > div { min-width: 0; }
       .tx .muted { overflow-wrap: anywhere; }
       .holding strong, .tx strong { display: block; }
+      .holding > div:last-child span { display: block; white-space: nowrap; }
       .positive { color: #00854d; }
       .negative { color: #d72828; }
       .bottom { position: fixed; left: 50%; bottom: 0; z-index: 30; transform: translateX(-50%); width: min(100%, 880px); display: grid; grid-template-columns: repeat(3, 1fr); padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); border: 1px solid #dce6e2; border-bottom: 0; border-radius: 24px 24px 0 0; background: #fff; box-shadow: 0 -10px 24px rgba(24,58,52,.12); }
@@ -185,6 +186,7 @@
           <div><span>Total cost</span><strong id="totalCost">฿0.00</strong></div>
           <div><span>Current value</span><strong id="currentValue">฿0.00</strong></div>
           <div><span>Unrealized P/L</span><strong id="profit">฿0.00</strong></div>
+          <div><span>Realized P/L</span><strong id="realizedProfit">฿0.00</strong></div>
         </div>
       </div>
 
@@ -511,7 +513,12 @@
       }
       function holdings() {
         const map = new Map();
-        state.txs.forEach((tx) => {
+        const chronologicalTransactions = [...state.txs].sort((a, b) => {
+          const byDate = String(a.date || '').localeCompare(String(b.date || ''));
+          if (byDate) return byDate;
+          return String(a.createdAt || a.id || '').localeCompare(String(b.createdAt || b.id || ''));
+        });
+        chronologicalTransactions.forEach((tx) => {
           const symbol = tx.symbol.toUpperCase();
           const row = map.get(symbol) || { symbol, quantity: 0, cost: 0, realized: 0, currency: tx.currency || 'THB' };
           const qty = Number(tx.shares) || 0;
@@ -519,13 +526,18 @@
           const fee = Number(tx.fee) || 0;
           if (tx.side === 'sell') {
             const avg = row.quantity ? row.cost / row.quantity : 0;
-            row.quantity -= qty;
-            row.cost -= avg * qty;
-            row.realized += gross - fee - avg * qty;
+            const matchedQty = Math.min(qty, row.quantity);
+            const matchedGross = qty ? gross * (matchedQty / qty) : 0;
+            const matchedFee = qty ? fee * (matchedQty / qty) : 0;
+            row.quantity -= matchedQty;
+            row.cost -= avg * matchedQty;
+            row.realized += matchedGross - matchedFee - avg * matchedQty;
           } else {
             row.quantity += qty;
             row.cost += gross + fee;
           }
+          if (Math.abs(row.quantity) < 1e-10) row.quantity = 0;
+          if (Math.abs(row.cost) < 1e-10) row.cost = 0;
           map.set(symbol, row);
         });
         return [...map.values()].map((row) => {
@@ -544,6 +556,7 @@
         const displayCurrency = state.displayCurrency || 'THB';
         const cost = rows.reduce((s, r) => s + convertAmount(r.cost, r.currency, displayCurrency), 0);
         const value = rows.reduce((s, r) => s + convertAmount(r.currentValue, r.currency, displayCurrency), 0);
+        const realized = rows.reduce((s, r) => s + convertAmount(r.realized, r.currency, displayCurrency), 0);
         const pl = value - cost;
         $('displayCurrency').value = displayCurrency;
         $('portfolioValue').textContent = money(value, displayCurrency);
@@ -552,13 +565,18 @@
         $('currentValue').textContent = money(value, displayCurrency);
         $('profit').textContent = money(pl, displayCurrency);
         $('profit').className = pl >= 0 ? 'positive' : 'negative';
+        $('realizedProfit').textContent = money(realized, displayCurrency);
+        $('realizedProfit').className = realized >= 0 ? 'positive' : 'negative';
         $('fxNote').textContent = `FX: 1 USD = ${num(Number(state.fx?.rate) || 0)} THB`;
         $('quoteNote').textContent = `Prices: ${state.quoteMeta?.source || 'Saved'} ${state.quoteMeta?.updatedAt || ''}`;
         $('holdings').innerHTML = rows.map((r) => `
           <article class="holding">
             <div><strong>${r.symbol}</strong><span class="muted">Avg ${money(r.avg, r.currency || 'THB')} · Qty ${num(r.quantity)} · Last ${money(r.currentPrice, r.currentPriceCurrency || r.currency || 'THB')}</span></div>
             <strong>${money(convertAmount(r.currentValue, r.currency || 'THB', displayCurrency), displayCurrency)}</strong>
-            <span class="${r.pl >= 0 ? 'positive' : 'negative'}">${money(r.pl, r.currency || 'THB')} (${r.pct.toFixed(2)}%)</span>
+            <div>
+              <span class="${r.pl >= 0 ? 'positive' : 'negative'}">Unrealized ${money(r.pl, r.currency || 'THB')} (${r.pct.toFixed(2)}%)</span>
+              <span class="${r.realized >= 0 ? 'positive' : 'negative'}">Realized ${money(r.realized, r.currency || 'THB')}</span>
+            </div>
           </article>`).join('');
         $('transactions').innerHTML = state.txs.map((tx) => `
           <div class="swipe-row" data-tx-id="${tx.id}">
