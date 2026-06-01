@@ -123,6 +123,9 @@
       :root[data-theme="dark"] .quote-note { color: #a7bbb5; }
       .status { display: none; margin-top: 12px; padding: 11px 12px; border-radius: 8px; color: #005f40; background: #e8f7ef; font-size: .9rem; font-weight: 800; }
       :root[data-theme="dark"] .status { color: #b6f2d0; background: #14352d; }
+      .status-content { display: inline-flex; align-items: center; gap: 9px; }
+      .inline-spinner { width: 16px; height: 16px; flex: 0 0 auto; border: 2px solid rgba(0,95,64,.22); border-top-color: #005f40; border-radius: 50%; animation: button-spin .72s linear infinite; }
+      :root[data-theme="dark"] .inline-spinner { border-color: rgba(182,242,208,.24); border-top-color: #b6f2d0; }
       .holdings, .transactions { display: grid; margin-top: 12px; }
       .holding { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 12px; padding: 13px 0; border-top: 1px solid #e5ece9; }
       .holding:first-child, .swipe-row:first-child { border-top: 0; }
@@ -142,6 +145,8 @@
       .tx .muted { overflow-wrap: anywhere; }
       .holding strong, .tx strong { display: block; }
       .holding > div:last-child span { display: block; white-space: nowrap; }
+      .allocation { color: #52706a; font-size: .82rem; font-weight: 800; white-space: nowrap; }
+      :root[data-theme="dark"] .allocation { color: #a7bbb5; }
       .tx-actions { display: flex; gap: 2px; }
       .tx-menu-action { width: 38px; height: 38px; display: grid; place-items: center; border: 0; border-radius: 8px; color: #52706a; background: transparent; }
       .tx-menu-action:hover { color: #005f40; background: #eef8f4; }
@@ -160,6 +165,24 @@
       :root[data-theme="dark"] .bottom button { color: #b9cbc6; }
       :root[data-theme="dark"] .bottom button:hover { color: #84e1b0; background: #17352d; }
       .bottom button:active { background: #dff1e8; }
+      :root[data-theme="dark"] .bottom button.active { color: #9ce7bf; background: #17352d; }
+      :root[data-theme="dark"] .bottom button:active { color: #b6f2d0; background: #225645; }
+      .success-popup { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 20px; background: rgba(0, 24, 19, .34); }
+      .success-popup[hidden] { display: none; }
+      .success-card { width: min(100%, 370px); padding: 22px; border-radius: 14px; background: #fff; box-shadow: 0 12px 30px rgba(0,0,0,.18); text-align: center; animation: popup-enter .22s cubic-bezier(.22,1,.36,1); }
+      :root[data-theme="dark"] .success-card { background: #10221e; color: #edf7f3; }
+      .success-check { width: 66px; height: 66px; margin: 0 auto 12px; display: grid; place-items: center; border-radius: 50%; background: #dff6e9; color: #00854d; animation: check-pop .42s cubic-bezier(.22,1,.36,1); }
+      :root[data-theme="dark"] .success-check { background: #143f31; color: #9ce7bf; }
+      .success-check svg { width: 38px; height: 38px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 3; }
+      .success-check path { stroke-dasharray: 30; stroke-dashoffset: 30; animation: check-draw .42s .14s cubic-bezier(.22,1,.36,1) forwards; }
+      .success-card h2 { margin-bottom: 7px; }
+      .success-card p { color: #52706a; }
+      :root[data-theme="dark"] .success-card p { color: #a7bbb5; }
+      .success-detail { margin: 14px 0 16px; padding: 11px 12px; border-radius: 8px; background: #f0f7f4; color: #15302e; font-size: .9rem; line-height: 1.5; text-align: left; white-space: pre-line; }
+      :root[data-theme="dark"] .success-detail { background: #0d1d1a; color: #dff7ed; }
+      @keyframes popup-enter { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+      @keyframes check-pop { from { opacity: 0; transform: scale(.72); } to { opacity: 1; transform: scale(1); } }
+      @keyframes check-draw { to { stroke-dashoffset: 0; } }
       @media (max-width: 640px) {
         .app { padding: 16px 14px 110px; }
         header { grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 10px; }
@@ -308,6 +331,18 @@
       </button>
     </nav>
 
+    <div class="success-popup" id="successPopup" role="dialog" aria-modal="true" aria-labelledby="successTitle" hidden>
+      <div class="success-card">
+        <div class="success-check" aria-hidden="true">
+          <svg viewBox="0 0 48 48"><path d="m13 25 7 7 15-17"></path></svg>
+        </div>
+        <h2 id="successTitle">Transaction saved</h2>
+        <p id="successMessage">Your record is ready.</p>
+        <div class="success-detail" id="successDetail"></div>
+        <button class="primary" id="successClose" type="button">View records</button>
+      </div>
+    </div>
+
     <script>
       const key = 'dca-line-ledger-standalone-v1';
       const DEFAULT_LIFF_ID = '2010225094-0KTTa9mA';
@@ -345,6 +380,7 @@
       let editingTxId = '';
       let extractionRunId = 0;
       let extractionController = null;
+      let successPopupTimer = null;
       const $ = (id) => document.getElementById(id);
       const money = (v, currency = 'THB') => new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number.isFinite(v) ? v : 0);
       const num = (v) => new Intl.NumberFormat('en-US', { maximumFractionDigits: 4 }).format(Number.isFinite(v) ? v : 0);
@@ -582,7 +618,7 @@
         });
         chronologicalTransactions.forEach((tx) => {
           const symbol = tx.symbol.toUpperCase();
-          const row = map.get(symbol) || { symbol, quantity: 0, cost: 0, realized: 0, currency: tx.currency || 'THB' };
+          const row = map.get(symbol) || { symbol, quantity: 0, soldQuantity: 0, cost: 0, realized: 0, currency: tx.currency || 'THB' };
           const qty = Number(tx.shares) || 0;
           const gross = Number(tx.stockValue) || qty * (Number(tx.price) || 0);
           const fee = Number(tx.fee) || 0;
@@ -592,6 +628,7 @@
             const matchedGross = qty ? gross * (matchedQty / qty) : 0;
             const matchedFee = qty ? fee * (matchedQty / qty) : 0;
             row.quantity -= matchedQty;
+            row.soldQuantity += matchedQty;
             row.cost -= avg * matchedQty;
             row.realized += matchedGross - matchedFee - avg * matchedQty;
           } else {
@@ -621,6 +658,13 @@
         const value = rows.reduce((s, r) => s + convertAmount(r.currentValue, r.currency, displayCurrency), 0);
         const realized = rows.reduce((s, r) => s + convertAmount(r.realized, r.currency, displayCurrency), 0);
         const pl = value - cost;
+        const visibleRows = rows
+          .filter((row) => profitView === 'realized' ? row.soldQuantity > 0 : row.quantity > 0)
+          .map((row) => ({
+            ...row,
+            allocation: value ? (convertAmount(row.currentValue, row.currency, displayCurrency) / value) * 100 : 0
+          }))
+          .sort((a, b) => b.allocation - a.allocation || Math.abs(b.realized) - Math.abs(a.realized) || a.symbol.localeCompare(b.symbol));
         $('displayCurrency').value = displayCurrency;
         $('profitView').value = profitView;
         $('portfolioValue').textContent = money(value, displayCurrency);
@@ -636,19 +680,19 @@
           ? `Updated ${new Date(state.quoteMeta.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
           : 'Using saved prices';
         $('quoteNote').title = state.quoteMeta?.source || 'Saved prices';
-        $('holdings').innerHTML = rows.length ? rows.map((r) => `
+        $('holdings').innerHTML = visibleRows.length ? visibleRows.map((r) => `
           <article class="holding">
             <div><strong>${r.symbol}</strong><span class="muted">Avg ${money(r.avg, r.currency || 'THB')} · Qty ${num(r.quantity)} · Last ${money(r.currentPrice, r.currentPriceCurrency || r.currency || 'THB')}</span></div>
-            <strong>${money(convertAmount(r.currentValue, r.currency || 'THB', displayCurrency), displayCurrency)}</strong>
+            <div><strong>${money(convertAmount(r.currentValue, r.currency || 'THB', displayCurrency), displayCurrency)}</strong><span class="allocation">${r.allocation.toFixed(2)}% allocation</span></div>
             <div>
               ${profitView === 'realized'
-                ? `<span class="${r.realized >= 0 ? 'positive' : 'negative'}">Realized ${money(r.realized, r.currency || 'THB')}</span>`
+                ? `<span class="${r.realized >= 0 ? 'positive' : 'negative'}">Realized ${money(r.realized, r.currency || 'THB')} · Sold ${num(r.soldQuantity)}</span>`
                 : `<span class="${r.pl >= 0 ? 'positive' : 'negative'}">Unrealized ${money(r.pl, r.currency || 'THB')} (${r.pct.toFixed(2)}%)</span>`}
             </div>
           </article>`).join('') : `
           <div class="empty-state">
-            <strong>No holdings yet</strong>
-            Upload a brokerage receipt to add your first DCA purchase.
+            <strong>${profitView === 'realized' ? 'No realized profit yet' : 'No open holdings yet'}</strong>
+            ${profitView === 'realized' ? 'Sold positions will appear here.' : 'Upload a brokerage receipt to add your first DCA purchase.'}
           </div>`;
         $('transactions').innerHTML = state.txs.length ? state.txs.map((tx) => `
           <div class="swipe-row" data-tx-id="${tx.id}">
@@ -816,8 +860,20 @@
           fee: fee ? String(Number(fee.toFixed(6))) : ''
         };
       }
-      function setStatus(message) {
-        $('ocrStatus').textContent = message;
+      function setStatus(message, loading = false) {
+        $('ocrStatus').replaceChildren();
+        if (message) {
+          const content = document.createElement('span');
+          content.className = 'status-content';
+          if (loading) {
+            const spinner = document.createElement('span');
+            spinner.className = 'inline-spinner';
+            spinner.setAttribute('aria-hidden', 'true');
+            content.append(spinner);
+          }
+          content.append(document.createTextNode(message));
+          $('ocrStatus').append(content);
+        }
         $('ocrStatus').style.display = message ? 'block' : 'none';
       }
       function setDateReviewWarning(show) {
@@ -829,6 +885,22 @@
         $('save').innerHTML = loading
           ? `<span class="button-loading"><span class="button-spinner" aria-hidden="true"></span>${label}</span>`
           : label;
+      }
+      function hideSaveSuccess() {
+        clearTimeout(successPopupTimer);
+        successPopupTimer = null;
+        $('successPopup').hidden = true;
+      }
+      function showSaveSuccess(tx, { updated = false, cloudSynced = false } = {}) {
+        const action = tx.side === 'sell' ? 'Sold' : 'Bought';
+        const total = (Number(tx.stockValue) || Number(tx.shares) * Number(tx.price)) + (Number(tx.fee) || 0);
+        $('successTitle').textContent = updated ? 'Transaction updated' : 'Transaction saved';
+        $('successMessage').textContent = cloudSynced ? 'Saved to your cloud records.' : 'Saved on this device.';
+        $('successDetail').textContent = `${action} ${num(Number(tx.shares) || 0)} ${tx.symbol}\n${tx.date || 'No date'} · ${money(Number(tx.price) || 0, tx.currency || 'THB')} each\nTotal ${money(total, tx.currency || 'THB')}`;
+        $('successPopup').hidden = false;
+        $('successClose').focus();
+        clearTimeout(successPopupTimer);
+        successPopupTimer = setTimeout(hideSaveSuccess, 5200);
       }
       function resetCapture() {
         extractionRunId += 1;
@@ -851,7 +923,7 @@
           setStatus('OCR library is still loading. Try again in a moment.');
           return;
         }
-        setStatus('Gemini could not read the photo. Trying OCR...');
+        setStatus('Gemini could not read the photo. Trying OCR...', true);
         try {
           const result = await Tesseract.recognize(screenshot, 'tha+eng');
           if (runId !== extractionRunId) return;
@@ -886,7 +958,7 @@
         const controller = new AbortController();
         extractionController?.abort();
         extractionController = controller;
-        setStatus('Gemini is reading the photo...');
+        setStatus('Gemini is reading the photo...', true);
         try {
           const response = await fetch('/api/extract', {
             method: 'POST',
@@ -1001,6 +1073,13 @@
       $('accountLogin').addEventListener('click', lineLogin);
       $('accountLogout').addEventListener('click', lineLogout);
       $('themeToggle').addEventListener('click', toggleTheme);
+      $('successClose').addEventListener('click', hideSaveSuccess);
+      $('successPopup').addEventListener('click', (event) => {
+        if (event.target === $('successPopup')) hideSaveSuccess();
+      });
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !$('successPopup').hidden) hideSaveSuccess();
+      });
       $('accountButton').addEventListener('click', () => {
         $('accountPopover').classList.toggle('open');
       });
@@ -1036,6 +1115,7 @@
           screenshot
         };
         if (!tx.symbol || !tx.shares || !tx.price) return;
+        const wasEditing = Boolean(editingTxId);
         if (editingTxId) tx.id = editingTxId;
         setSaveLoading(true, editingTxId ? 'Updating transaction' : 'Saving transaction');
         try {
@@ -1055,6 +1135,7 @@
           refreshStockPrices();
           setTab('records');
           setLineStatus(cloudTx ? 'Transaction saved to cloud.' : 'Transaction saved in this browser.');
+          showSaveSuccess(tx, { updated: wasEditing, cloudSynced: Boolean(cloudTx) });
         } catch (error) {
           if (editingTxId) {
             state.txs = state.txs.map((item) => item.id === editingTxId ? { ...tx, cloudSynced: false, pendingAction: 'update' } : item);
@@ -1068,6 +1149,7 @@
           editingTxId = '';
           $('save').textContent = 'Save transaction';
           resetCapture();
+          showSaveSuccess(tx, { updated: wasEditing });
         } finally {
           setSaveLoading(false);
         }
