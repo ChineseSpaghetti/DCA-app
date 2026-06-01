@@ -7,11 +7,11 @@
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <style>
-      :root { font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #102626; background: #f4f8f6; }
+      :root { font-family: "Noto Sans Thai", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #102626; background: #f4f8f6; }
       :root[data-theme="dark"] { color: #edf7f3; background: #071311; }
       * { box-sizing: border-box; }
-      body { margin: 0; min-height: 100vh; background: linear-gradient(180deg, #fbfdfc, #edf5f2); }
-      :root[data-theme="dark"] body { background: linear-gradient(180deg, #071311, #0b1e1a); }
+      body { margin: 0; min-height: 100vh; background: #f4f8f6; }
+      :root[data-theme="dark"] body { background: #071311; }
       button, input, select, textarea { font: inherit; }
       button {
         cursor: pointer;
@@ -19,23 +19,25 @@
       }
       button:active { transform: translateY(1px) scale(.99); }
       button:focus-visible { outline: 3px solid rgba(0, 123, 85, .28); outline-offset: 2px; }
-      .app { width: min(100%, 880px); margin: 0 auto; padding: 22px 16px 132px; }
-      header { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: center; gap: 12px; margin-bottom: 16px; }
-      header > div:nth-child(2) { text-align: center; }
+      .app { width: min(100%, 880px); margin: 0 auto; padding: 24px 16px 40px; }
+      header { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: center; gap: 12px; margin-bottom: 18px; }
+      header > div:nth-child(2) { text-align: left; }
       h1, h2, p { margin: 0; }
-      h1 { font-size: clamp(2rem, 8vw, 3rem); line-height: 1; }
+      h1 { font-size: 1.7rem; line-height: 1.1; letter-spacing: -.035em; }
+      h2 { font-size: 1.3rem; line-height: 1.2; letter-spacing: -.02em; text-wrap: balance; }
+      header p { margin-top: 3px; font-size: .9rem; }
       header p, section p, label span, .muted { color: #667875; }
       :root[data-theme="dark"] header p, :root[data-theme="dark"] section p, :root[data-theme="dark"] label span, :root[data-theme="dark"] .muted { color: #a7bbb5; }
       .icon-btn { width: 44px; height: 44px; border: 0; border-radius: 8px; background: #e7f3ee; color: #006b49; font-weight: 900; }
       .theme-toggle { font-size: 1.15rem; line-height: 1; }
-      .icon-btn:hover { background: #cfeade; color: #004d35; box-shadow: 0 8px 18px rgba(0, 107, 73, .12); }
+      .icon-btn:hover { background: #cfeade; color: #004d35; }
       .icon-btn:active { background: #b8decc; }
       :root[data-theme="dark"] .icon-btn { background: #15342b; color: #84e1b0; }
-      :root[data-theme="dark"] .icon-btn:hover { background: #1b4639; color: #b6f2d0; box-shadow: 0 8px 18px rgba(0, 0, 0, .22); }
+      :root[data-theme="dark"] .icon-btn:hover { background: #1b4639; color: #b6f2d0; }
       :root[data-theme="dark"] .icon-btn:active { background: #225645; }
       .account-menu { position: relative; width: 44px; justify-self: end; }
       .account-btn { width: 44px; height: 44px; border: 0; border-radius: 50%; background: #e7f3ee; color: #006b49; display: grid; place-items: center; overflow: hidden; padding: 0; }
-      .account-btn:hover { background: #cfeade; color: #004d35; box-shadow: 0 8px 18px rgba(0, 107, 73, .12); }
+      .account-btn:hover { background: #cfeade; color: #004d35; }
       .account-btn:active { background: #b8decc; }
       :root[data-theme="dark"] .account-btn { background: #15342b; color: #84e1b0; }
       :root[data-theme="dark"] .account-btn:hover { background: #1b4639; color: #b6f2d0; }
@@ -49,20 +51,27 @@
       .account-btn img { width: 100%; height: 100%; object-fit: cover; display: none; }
       .account-btn.logged-in img { display: block; }
       .account-btn.logged-in .account-placeholder { display: none; }
-      .account-popover { position: absolute; top: 54px; right: 0; z-index: 20; width: min(340px, calc(100vw - 32px)); display: none; padding: 14px; border: 1px solid #dbe5e1; border-radius: 8px; background: white; box-shadow: 0 18px 42px rgba(24, 58, 52, .16); }
+      .account-popover { position: absolute; top: 54px; right: 0; z-index: 20; width: min(340px, calc(100vw - 32px)); display: none; padding: 14px; border: 1px solid #dbe5e1; border-radius: 8px; background: white; box-shadow: 0 6px 8px rgba(0, 0, 0, .12); }
       :root[data-theme="dark"] .account-popover { border-color: #25483f; background: #10221e; }
       .account-popover.open { display: grid; gap: 12px; }
       .account-popover strong, .account-popover span { display: block; overflow-wrap: anywhere; }
       .account-popover span { color: #667875; font-size: .9rem; }
-      .summary { color: white; border-radius: 8px; padding: 24px; overflow: hidden; background: linear-gradient(135deg, #004d35, #002a22); box-shadow: 0 18px 42px rgba(0, 77, 53, .22); }
-      .summary .big { display: block; margin: 8px 0; font-size: clamp(2.2rem, 10vw, 3.35rem); font-weight: 900; }
+      .summary { border: 1px solid #cfe1da; border-radius: 12px; padding: 20px; overflow: hidden; background: #fff; }
+      :root[data-theme="dark"] .summary { border-color: #25483f; background: #10221e; }
+      .summary .big { display: block; margin: 6px 0 2px; color: #004d35; font-size: 2.5rem; line-height: 1.05; font-weight: 900; letter-spacing: -.055em; }
+      :root[data-theme="dark"] .summary .big { color: #9ce7bf; }
       .summary-top { display: flex; align-items: start; justify-content: space-between; gap: 14px; }
       .summary-top > div { min-width: 0; }
-      .summary-top label { min-width: 128px; color: rgba(255,255,255,.76); font-size: .84rem; }
-      .summary-top select { min-height: 42px; color: white; background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.25); }
-      .fx-note { display: block; margin-top: 10px; color: rgba(255,255,255,.72); }
-      .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; border-top: 1px solid rgba(255,255,255,.24); margin-top: 18px; padding-top: 18px; }
-      .summary-grid span { display: block; color: rgba(255,255,255,.72); font-size: .88rem; }
+      .summary-top span, .summary-grid span { color: #667875; }
+      :root[data-theme="dark"] .summary-top span, :root[data-theme="dark"] .summary-grid span { color: #a7bbb5; }
+      .summary-top label { width: 108px; color: #667875; font-size: .84rem; }
+      .summary-top select { min-height: 40px; padding: 8px 10px; }
+      .fx-note { display: block; margin-top: 8px; color: #667875; font-size: .82rem; }
+      :root[data-theme="dark"] .fx-note { color: #a7bbb5; }
+      .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; border-top: 1px solid #e3ebe8; margin-top: 16px; padding-top: 15px; }
+      :root[data-theme="dark"] .summary-grid { border-color: #25483f; }
+      .summary-grid span { display: block; margin-bottom: 4px; font-size: .78rem; }
+      .summary-grid strong { font-size: .98rem; }
       .tabs { display: grid; grid-template-columns: repeat(3, 1fr); margin: 18px 0 12px; border: 1px solid #dbe5e1; border-radius: 8px; background: white; overflow: hidden; }
       :root[data-theme="dark"] .tabs { border-color: #25483f; background: #10221e; }
       .tabs button { min-height: 56px; border: 0; background: white; color: #405351; font-weight: 800; }
@@ -73,12 +82,12 @@
       .tabs button.active:hover { background: #e6f5ee; }
       :root[data-theme="dark"] .tabs button.active { color: #84e1b0; border-bottom-color: #84e1b0; }
       :root[data-theme="dark"] .tabs button.active:hover { background: #17352d; }
-      section { margin-top: 14px; padding: 20px; border: 1px solid #dfe8e5; border-radius: 8px; background: rgba(255,255,255,.94); box-shadow: 0 12px 30px rgba(24,58,52,.07); }
-      :root[data-theme="dark"] section { border-color: #25483f; background: rgba(16, 34, 30, .96); box-shadow: 0 12px 30px rgba(0,0,0,.24); }
+      section { margin-top: 14px; padding: 20px; border: 1px solid #dfe8e5; border-radius: 12px; background: #fff; }
+      :root[data-theme="dark"] section { border-color: #25483f; background: #10221e; }
       .capture-actions { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 16px; }
       .capture-actions button { min-height: 84px; border: 1px solid #d6e2de; border-radius: 8px; background: white; color: #005f40; font-weight: 850; }
       :root[data-theme="dark"] .capture-actions button, :root[data-theme="dark"] .secondary { border-color: #42685d; background: #132b26; color: #dff7ed; }
-      .capture-actions button:hover { border-color: #7ab69d; background: #eef8f4; color: #004d35; box-shadow: 0 10px 22px rgba(24, 58, 52, .08); }
+      .capture-actions button:hover { border-color: #7ab69d; background: #eef8f4; color: #004d35; }
       .capture-actions button:active { background: #dff1e8; }
       .preview { display: none; position: relative; height: 180px; margin-top: 14px; border: 1px solid #dce5e2; border-radius: 8px; overflow: hidden; background: #eef5f2; }
       .preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -87,27 +96,39 @@
       textarea:focus, input:focus, select:focus { border-color: #007b55; box-shadow: 0 0 0 4px rgba(0,123,85,.1); }
       textarea { min-height: 82px; resize: vertical; }
       label { display: grid; gap: 7px; }
+      .field-warning span { color: #9a5a00; font-weight: 800; }
+      .field-warning input { border-color: #d5963f; background: #fffaf0; box-shadow: 0 0 0 4px rgba(213,150,63,.1); }
+      :root[data-theme="dark"] .field-warning input { border-color: #d8a65d; background: #302719; }
+      .field-note { display: none; color: #9a5a00; font-size: .8rem; font-weight: 700; }
+      .field-warning .field-note { display: block; }
       .form-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 16px; }
       .form-grid > label, input[type="date"] { min-width: 0; max-width: 100%; }
       .row { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 16px; padding: 16px; border-radius: 8px; background: #e8f7ef; }
       :root[data-theme="dark"] .row { background: #14352d; }
       .primary { border: 0; border-radius: 8px; color: white; background: #005f40; padding: 13px 18px; font-weight: 900; }
-      .primary:hover { background: #007a53; box-shadow: 0 10px 22px rgba(0, 95, 64, .22); }
+      .primary:hover { background: #007a53; }
       .primary:active { background: #004d35; }
       .primary:disabled { cursor: wait; opacity: .82; }
       .button-loading { display: inline-flex; align-items: center; gap: 9px; }
       .button-spinner { width: 17px; height: 17px; border: 2px solid rgba(255,255,255,.42); border-top-color: white; border-radius: 50%; animation: button-spin .72s linear infinite; }
       @keyframes button-spin { to { transform: rotate(360deg); } }
       .secondary { border: 1px solid #b9cac5; border-radius: 8px; color: #15302e; background: white; padding: 10px 13px; font-weight: 800; }
-      .secondary:hover { border-color: #6aa98e; background: #eef8f4; color: #005f40; box-shadow: 0 8px 18px rgba(24, 58, 52, .08); }
+      .secondary:hover { border-color: #6aa98e; background: #eef8f4; color: #005f40; }
       :root[data-theme="dark"] .secondary:hover, :root[data-theme="dark"] .capture-actions button:hover { border-color: #5a917d; background: #17352d; color: #b6f2d0; }
       .secondary:active { background: #dff1e8; }
       .records-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-      .portfolio-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+      .portfolio-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 14px; }
       .portfolio-actions select { width: auto; min-height: 44px; padding: 9px 34px 9px 12px; }
-      .status { display: none; margin-top: 10px; color: #005f40; font-weight: 800; }
+      .quote-note { color: #667875; font-size: .82rem; }
+      :root[data-theme="dark"] .quote-note { color: #a7bbb5; }
+      .status { display: none; margin-top: 12px; padding: 11px 12px; border-radius: 8px; color: #005f40; background: #e8f7ef; font-size: .9rem; font-weight: 800; }
+      :root[data-theme="dark"] .status { color: #b6f2d0; background: #14352d; }
       .holdings, .transactions { display: grid; margin-top: 12px; }
       .holding { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 12px; padding: 13px 0; border-top: 1px solid #e5ece9; }
+      .holding:first-child, .swipe-row:first-child { border-top: 0; }
+      .empty-state { padding: 22px 4px 8px; color: #667875; text-align: center; }
+      .empty-state strong { display: block; margin-bottom: 5px; color: #15302e; }
+      :root[data-theme="dark"] .empty-state, :root[data-theme="dark"] .empty-state strong { color: #b9cbc6; }
       .swipe-row { position: relative; min-height: 66px; overflow: hidden; border-top: 1px solid #e5ece9; background: #f3f7f5; touch-action: pan-y; }
       :root[data-theme="dark"] .swipe-row { border-color: #25483f; background: #0d1d1a; }
       .swipe-actions { position: absolute; inset: 0; display: flex; justify-content: space-between; }
@@ -115,31 +136,55 @@
       .swipe-action svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; }
       .swipe-delete { background: #d83232; }
       .swipe-edit { background: #087b55; }
-      .tx { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 66px; padding: 11px 10px; background: #fff; transition: transform .18s ease; will-change: transform; }
+      .tx { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 10px; min-height: 66px; padding: 11px 6px 11px 10px; background: #fff; transition: transform .18s ease; will-change: transform; }
       :root[data-theme="dark"] .tx { background: #10221e; }
       .tx > div { min-width: 0; }
       .tx .muted { overflow-wrap: anywhere; }
       .holding strong, .tx strong { display: block; }
       .holding > div:last-child span { display: block; white-space: nowrap; }
+      .tx-actions { display: flex; gap: 2px; }
+      .tx-menu-action { width: 38px; height: 38px; display: grid; place-items: center; border: 0; border-radius: 8px; color: #52706a; background: transparent; }
+      .tx-menu-action:hover { color: #005f40; background: #eef8f4; }
+      .tx-menu-action.delete:hover { color: #b31e1e; background: #fff0f0; }
+      .tx-menu-action svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; }
       .positive { color: #00854d; }
       .negative { color: #d72828; }
-      .bottom { position: fixed; left: 50%; bottom: 0; z-index: 30; transform: translateX(-50%); width: min(100%, 880px); display: grid; grid-template-columns: repeat(3, 1fr); padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); border: 1px solid #dce6e2; border-bottom: 0; border-radius: 24px 24px 0 0; background: #fff; box-shadow: 0 -10px 24px rgba(24,58,52,.12); }
+      .bottom { position: fixed; left: 50%; bottom: 0; z-index: 30; transform: translateX(-50%); width: min(100%, 880px); display: grid; grid-template-columns: repeat(3, 1fr); padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); border: 1px solid #dce6e2; border-bottom: 0; border-radius: 24px 24px 0 0; background: #fff; box-shadow: 0 -10px 24px rgba(0,0,0,.1); }
       :root[data-theme="dark"] .bottom { border-color: #25483f; background: #0a1714; box-shadow: 0 -10px 24px rgba(0,0,0,.28); }
+      .bottom { display: none; }
       .bottom button { min-height: 54px; border: 0; background: transparent; color: #405351; font-weight: 850; }
+      .bottom button span { display: block; margin-top: 3px; font-size: .74rem; }
+      .bottom svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; }
+      .bottom button.active { color: #006b49; background: #eef8f4; border-radius: 8px; }
       .bottom button:hover { color: #005f40; background: #eef8f4; border-radius: 8px; }
       :root[data-theme="dark"] .bottom button { color: #b9cbc6; }
       :root[data-theme="dark"] .bottom button:hover { color: #84e1b0; background: #17352d; }
       .bottom button:active { background: #dff1e8; }
       @media (max-width: 640px) {
+        .app { padding: 16px 14px 110px; }
         header { grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 10px; }
-        .summary { padding: 20px; }
-        .summary-top { display: grid; grid-template-columns: 1fr; gap: 14px; }
-        .summary-top label { width: min(180px, 100%); min-width: 0; justify-self: start; }
-        .summary-grid, .form-grid, .capture-actions { grid-template-columns: 1fr; }
+        h1 { font-size: 1.5rem; }
+        header p { font-size: .8rem; }
+        .summary { padding: 16px; }
+        .summary .big { font-size: 2.15rem; }
+        .summary-top { gap: 10px; }
+        .summary-top label { width: 96px; min-width: 0; }
+        .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; }
+        .tabs { display: none; }
+        .form-grid, .capture-actions { grid-template-columns: 1fr; }
         .holding { grid-template-columns: 1fr; }
         .records-head { flex-direction: column; }
         .account-popover { right: 0; width: min(200px, calc(100vw - 32px)); }
         .row { align-items: stretch; flex-direction: column; }
+        .portfolio-actions { display: grid; grid-template-columns: 1fr auto; }
+        .portfolio-actions select { width: 100%; }
+        .quote-note { grid-column: 1 / -1; }
+        .tx { grid-template-columns: minmax(0, 1fr) auto; }
+        .tx-actions { grid-column: 1 / -1; justify-content: flex-end; border-top: 1px solid #edf2f0; padding-top: 4px; }
+        .bottom { display: grid; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
       }
     </style>
   </head>
@@ -150,7 +195,7 @@
         <button class="icon-btn theme-toggle" id="themeToggle" aria-label="Switch to dark mode">&#9790;</button>
         <div>
           <h1>DCA Ledger</h1>
-          <p>Make DCA Great Again!</p>
+          <p>Track every DCA purchase clearly.</p>
         </div>
         <div class="account-menu">
           <button class="account-btn" id="accountButton" aria-label="Open account menu">
@@ -163,7 +208,7 @@
           <div class="account-popover" id="accountPopover">
             <div>
               <strong id="accountName">Not connected</strong>
-              <span id="accountHint">Login with LINE to sync records.</span>
+              <span id="accountHint" role="status" aria-live="polite">Login with LINE to sync records.</span>
             </div>
             <button class="line-login-action" id="accountLogin" aria-label="Log in with LINE"><span class="line-login-art" aria-hidden="true"></span></button>
             <button class="secondary" id="accountLogout">Logout</button>
@@ -176,11 +221,11 @@
           <div>
             <span>Portfolio value</span>
             <strong class="big" id="portfolioValue">฿0.00</strong>
-            <small id="costBase">Average cost base ฿0.00</small>
+            <small id="costBase">Cost basis ฿0.00</small>
             <small class="fx-note" id="fxNote">FX rate loading...</small>
           </div>
           <label>
-            Display
+            Currency
             <select id="displayCurrency"><option value="THB">THB</option><option value="USD">USD</option></select>
           </label>
         </div>
@@ -210,12 +255,12 @@
       <section data-panel="capture">
         <h2>Review transaction</h2>
         <p>Upload a screenshot to read ราคาที่ได้จริง, จำนวนหุ้น, and มูลค่าหุ้น.</p>
-        <div class="status" id="ocrStatus"></div>
+        <div class="status" id="ocrStatus" role="status" aria-live="polite"></div>
         <div class="form-grid">
           <label><span>Symbol</span><input id="symbol" placeholder="KTB" /></label>
           <label><span>Side</span><select id="side"><option value="buy">Buy</option><option value="sell">Sell</option></select></label>
           <label><span>Currency</span><select id="currency"><option value="THB">THB</option><option value="USD">USD</option></select></label>
-          <label><span>Date</span><input id="date" type="date" /></label>
+          <label id="dateField"><span>Date</span><input id="date" type="date" aria-describedby="dateNote" /><small class="field-note" id="dateNote">Check this date before saving.</small></label>
           <label><span>Shares</span><input id="shares" inputmode="decimal" placeholder="1000" /></label>
           <label><span>Price / ราคาที่ได้จริง</span><input id="price" inputmode="decimal" placeholder="299.05" /></label>
           <label><span>Stock value / มูลค่าหุ้น</span><input id="stockValue" inputmode="decimal" placeholder="0.00" readonly /></label>
@@ -237,6 +282,7 @@
             <option value="realized">Realized P/L</option>
           </select>
           <button class="secondary" id="refreshPrices">Refresh prices</button>
+          <small class="quote-note" id="quoteNote">Using saved prices</small>
         </div>
         <div class="holdings" id="holdings"></div>
       </section>
@@ -248,9 +294,18 @@
     </main>
 
     <nav class="bottom">
-      <button data-tab="overview">Home</button>
-      <button data-tab="capture">Add</button>
-      <button data-tab="records">Records</button>
+      <button data-tab="overview" aria-label="Overview">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12 12 4l9 8"></path><path d="M5 10v10h14V10"></path></svg>
+        <span>Overview</span>
+      </button>
+      <button data-tab="capture" aria-label="Add transaction">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+        <span>Add</span>
+      </button>
+      <button data-tab="records" aria-label="Records">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z"></path><path d="M8 8h8"></path><path d="M8 12h8"></path><path d="M8 16h5"></path></svg>
+        <span>Records</span>
+      </button>
     </nav>
 
     <script>
@@ -569,7 +624,7 @@
         $('displayCurrency').value = displayCurrency;
         $('profitView').value = profitView;
         $('portfolioValue').textContent = money(value, displayCurrency);
-        $('costBase').textContent = `Average cost base ${money(cost, displayCurrency)}`;
+        $('costBase').textContent = `Cost basis ${money(cost, displayCurrency)}`;
         $('totalCost').textContent = money(cost, displayCurrency);
         $('currentValue').textContent = money(value, displayCurrency);
         $('profit').textContent = money(pl, displayCurrency);
@@ -577,7 +632,11 @@
         $('realizedProfit').textContent = money(realized, displayCurrency);
         $('realizedProfit').className = realized >= 0 ? 'positive' : 'negative';
         $('fxNote').textContent = `FX: 1 USD = ${num(Number(state.fx?.rate) || 0)} THB`;
-        $('holdings').innerHTML = rows.map((r) => `
+        $('quoteNote').textContent = state.quoteMeta?.updatedAt
+          ? `Updated ${new Date(state.quoteMeta.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+          : 'Using saved prices';
+        $('quoteNote').title = state.quoteMeta?.source || 'Saved prices';
+        $('holdings').innerHTML = rows.length ? rows.map((r) => `
           <article class="holding">
             <div><strong>${r.symbol}</strong><span class="muted">Avg ${money(r.avg, r.currency || 'THB')} · Qty ${num(r.quantity)} · Last ${money(r.currentPrice, r.currentPriceCurrency || r.currency || 'THB')}</span></div>
             <strong>${money(convertAmount(r.currentValue, r.currency || 'THB', displayCurrency), displayCurrency)}</strong>
@@ -586,8 +645,12 @@
                 ? `<span class="${r.realized >= 0 ? 'positive' : 'negative'}">Realized ${money(r.realized, r.currency || 'THB')}</span>`
                 : `<span class="${r.pl >= 0 ? 'positive' : 'negative'}">Unrealized ${money(r.pl, r.currency || 'THB')} (${r.pct.toFixed(2)}%)</span>`}
             </div>
-          </article>`).join('');
-        $('transactions').innerHTML = state.txs.map((tx) => `
+          </article>`).join('') : `
+          <div class="empty-state">
+            <strong>No holdings yet</strong>
+            Upload a brokerage receipt to add your first DCA purchase.
+          </div>`;
+        $('transactions').innerHTML = state.txs.length ? state.txs.map((tx) => `
           <div class="swipe-row" data-tx-id="${tx.id}">
             <div class="swipe-actions">
               <button class="swipe-action swipe-delete" type="button" aria-label="Delete ${tx.symbol}" onclick="removeTx('${tx.id}')">
@@ -600,13 +663,30 @@
             <article class="tx">
               <div><strong>${tx.symbol} · ${tx.side.toUpperCase()}</strong><span class="muted">${tx.date} · ${num(tx.shares)} shares at ${money(tx.price, tx.currency || 'THB')}</span></div>
               <span>${money(Number(tx.stockValue) || tx.shares * tx.price, tx.currency || 'THB')}</span>
+              <div class="tx-actions">
+                <button class="tx-menu-action" type="button" aria-label="Edit ${tx.symbol}" onclick="editTx('${tx.id}')">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+                </button>
+                <button class="tx-menu-action delete" type="button" aria-label="Delete ${tx.symbol}" onclick="removeTx('${tx.id}')">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v5"></path><path d="M14 11v5"></path></svg>
+                </button>
+              </div>
             </article>
-          </div>`).join('');
+          </div>`).join('') : `
+          <div class="empty-state">
+            <strong>No transactions yet</strong>
+            Your saved purchases and sales will appear here.
+          </div>`;
         setupSwipeRows();
         updateDraftTotal();
       }
       function setTab(tab) {
-        document.querySelectorAll('[data-tab]').forEach((btn) => btn.classList.toggle('active', btn.dataset.tab === tab));
+        document.querySelectorAll('[data-tab]').forEach((btn) => {
+          const isActive = btn.dataset.tab === tab;
+          btn.classList.toggle('active', isActive);
+          if (isActive) btn.setAttribute('aria-current', 'page');
+          else btn.removeAttribute('aria-current');
+        });
         document.querySelectorAll('[data-panel]').forEach((panel) => panel.style.display = panel.dataset.panel.includes(tab) ? '' : 'none');
       }
       function updateDraftTotal() {
@@ -623,7 +703,7 @@
           saveState();
           render();
         } catch (error) {
-          $('fxNote').textContent = `FX: using saved/fallback rate. ${error.message || ''}`;
+          $('fxNote').textContent = 'FX: using saved rate';
         }
       }
       async function refreshStockPrices() {
@@ -637,7 +717,7 @@
           state.prices = { ...state.prices, ...data.quotes };
           state.quoteMeta = {
             source: data.source || 'Quote provider',
-            updatedAt: new Date().toLocaleString(),
+            updatedAt: new Date().toISOString(),
             errors: data.errors || {}
           };
           saveState();
@@ -740,6 +820,10 @@
         $('ocrStatus').textContent = message;
         $('ocrStatus').style.display = message ? 'block' : 'none';
       }
+      function setDateReviewWarning(show) {
+        $('dateField').classList.toggle('field-warning', Boolean(show));
+        $('date').setAttribute('aria-invalid', show ? 'true' : 'false');
+      }
       function setSaveLoading(loading, label = 'Save transaction') {
         $('save').disabled = loading;
         $('save').innerHTML = loading
@@ -754,6 +838,7 @@
         $('file').value = '';
         $('previewImg').src = '';
         $('preview').style.display = 'none';
+        setDateReviewWarning(false);
         setStatus('');
       }
       async function readScreenshot(runId = extractionRunId) {
@@ -783,6 +868,7 @@
         if (parsed.currency) $('currency').value = parsed.currency;
         const dateIsReliable = validIsoDate(parsed.date) && Number(parsed.dateConfidence) >= 0.8;
         if (dateIsReliable) $('date').value = parsed.date;
+        setDateReviewWarning(!dateIsReliable);
         if (parsed.shares) $('shares').value = parsed.shares;
         if (parsed.price) $('price').value = parsed.price;
         if (parsed.stockValue) $('stockValue').value = parsed.stockValue;
@@ -857,6 +943,7 @@
       function editTx(id) {
         const tx = state.txs.find((item) => item.id === id);
         if (!tx) return;
+        setDateReviewWarning(false);
         editingTxId = id;
         $('symbol').value = tx.symbol;
         $('side').value = tx.side;
@@ -870,6 +957,7 @@
         setTab('capture');
       }
       async function removeTx(id) {
+        if (!window.confirm('Delete this transaction?')) return;
         const previous = [...state.txs];
         state.txs = state.txs.filter((tx) => tx.id !== id);
         saveState();
@@ -896,6 +984,7 @@
         const runId = ++extractionRunId;
         extractionController?.abort();
         extractionController = null;
+        setDateReviewWarning(false);
         setStatus('');
         const reader = new FileReader();
         reader.onload = () => {
@@ -921,6 +1010,7 @@
         }
       });
       ['shares', 'price', 'fee'].forEach((id) => $(id).addEventListener('input', updateDraftTotal));
+      $('date').addEventListener('change', () => setDateReviewWarning(false));
       $('currency').addEventListener('change', updateDraftTotal);
       $('displayCurrency').addEventListener('change', () => {
         state.displayCurrency = $('displayCurrency').value;
