@@ -157,7 +157,7 @@ def extract_transaction(api_key, image_data_url):
     }
 
     data = None
-    for model in ["gemini-3.1-flash-lite", "gemini-2.5-flash-lite"]:
+    for model in ["gemini-3.1-flash-lite"]:
         request = urllib.request.Request(
             f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}",
             data=json.dumps(payload).encode("utf-8"),

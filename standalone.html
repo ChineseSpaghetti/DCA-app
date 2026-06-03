@@ -92,6 +92,9 @@
       .preview { display: none; position: relative; height: 180px; margin-top: 14px; border: 1px solid #dce5e2; border-radius: 8px; overflow: hidden; background: #eef5f2; }
       .preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
       textarea, input, select { width: 100%; min-width: 0; max-width: 100%; min-height: 50px; border: 1px solid #d5dfdc; border-radius: 8px; padding: 12px 14px; outline: none; background: white; }
+      input[type="date"] { display: block; min-width: 0; max-width: 100%; -webkit-appearance: none; appearance: none; line-height: 1.2; }
+      input[type="date"]::-webkit-date-and-time-value { min-height: 1.2em; text-align: left; }
+      input[type="date"]::-webkit-calendar-picker-indicator { margin: 0; padding: 0; }
       :root[data-theme="dark"] textarea, :root[data-theme="dark"] input, :root[data-theme="dark"] select { border-color: #42685d; background: #0d1d1a; color: #edf7f3; }
       textarea:focus, input:focus, select:focus { border-color: #007b55; box-shadow: 0 0 0 4px rgba(0,123,85,.1); }
       textarea { min-height: 82px; resize: vertical; }
@@ -195,6 +198,7 @@
         .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; }
         .tabs { display: none; }
         .form-grid, .capture-actions { grid-template-columns: 1fr; }
+        .form-grid > label, .form-grid input, .form-grid select { min-width: 0; width: 100%; max-width: 100%; }
         .holding { grid-template-columns: 1fr; }
         .records-head { flex-direction: column; }
         .account-popover { right: 0; width: min(200px, calc(100vw - 32px)); }
@@ -277,7 +281,7 @@
 
       <section data-panel="capture">
         <h2>Review transaction</h2>
-        <p>Upload a screenshot to read ราคาที่ได้จริง, จำนวนหุ้น, and มูลค่าหุ้น.</p>
+        <!-- <p>Upload a screenshot to read ราคาที่ได้จริง, จำนวนหุ้น, and มูลค่าหุ้น.</p> -->
         <div class="status" id="ocrStatus" role="status" aria-live="polite"></div>
         <div class="form-grid">
           <label><span>Symbol</span><input id="symbol" placeholder="KTB" /></label>
@@ -381,6 +385,8 @@
       let extractionRunId = 0;
       let extractionController = null;
       let successPopupTimer = null;
+      let liffReady = false;
+      let liffInitPromise = null;
       const $ = (id) => document.getElementById(id);
       const money = (v, currency = 'THB') => new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number.isFinite(v) ? v : 0);
       const num = (v) => new Intl.NumberFormat('en-US', { maximumFractionDigits: 4 }).format(Number.isFinite(v) ? v : 0);
@@ -463,6 +469,18 @@
         const accessToken = window.liff?.getAccessToken?.();
         return accessToken ? { Authorization: `Bearer ${accessToken}`, ...extra } : extra;
       }
+      function samePageLoginRedirect() {
+        const redirect = new URL(location.href);
+        ['code', 'state', 'liffClientId', 'liffRedirectUri'].forEach((key) => redirect.searchParams.delete(key));
+        redirect.hash = '';
+        return redirect.toString();
+      }
+      async function ensureLiffReady(liffId = DEFAULT_LIFF_ID) {
+        if (liffReady) return;
+        liffInitPromise ||= liff.init({ liffId });
+        await liffInitPromise;
+        liffReady = true;
+      }
       async function loadCloudTransactions() {
         const lineUserId = cloudUserId();
         if (!lineUserId) return;
@@ -544,7 +562,7 @@
         saveState();
         setLineStatus('Initializing LINE...');
         try {
-          await liff.init({ liffId });
+          await ensureLiffReady(liffId);
           if (!liff.isLoggedIn()) {
             state.lineProfile = null;
             saveState();
@@ -575,9 +593,15 @@
         }
         setLineStatus('Opening LINE Login...');
         try {
-          await liff.init({ liffId });
+          if (!liffReady) {
+            await ensureLiffReady(liffId);
+            if (!liff.isLoggedIn()) {
+              setLineStatus('LINE is ready. Tap LINE login again to continue.');
+              return;
+            }
+          }
           if (!liff.isLoggedIn()) {
-            liff.login({ redirectUri: location.href });
+            liff.login({ redirectUri: samePageLoginRedirect() });
             return;
           }
           await initializeLine();
