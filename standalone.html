@@ -469,12 +469,6 @@
         const accessToken = window.liff?.getAccessToken?.();
         return accessToken ? { Authorization: `Bearer ${accessToken}`, ...extra } : extra;
       }
-      function samePageLoginRedirect() {
-        const redirect = new URL(location.href);
-        ['code', 'state', 'liffClientId', 'liffRedirectUri'].forEach((key) => redirect.searchParams.delete(key));
-        redirect.hash = '';
-        return redirect.toString();
-      }
       async function ensureLiffReady(liffId = DEFAULT_LIFF_ID) {
         if (liffReady) return;
         liffInitPromise ||= liff.init({ liffId });
@@ -601,7 +595,7 @@
             }
           }
           if (!liff.isLoggedIn()) {
-            liff.login({ redirectUri: samePageLoginRedirect() });
+            liff.login();
             return;
           }
           await initializeLine();
