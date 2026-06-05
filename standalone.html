@@ -91,6 +91,21 @@
       .capture-actions button:active { background: #dff1e8; }
       .preview { display: none; position: relative; height: 180px; margin-top: 14px; border: 1px solid #dce5e2; border-radius: 8px; overflow: hidden; background: #eef5f2; }
       .preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+      .bulk-review { display: none; margin-top: 16px; }
+      .bulk-review.open { display: block; }
+      .bulk-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+      .bulk-head p { margin-top: 4px; }
+      .bulk-list { display: grid; gap: 10px; }
+      .bulk-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding: 12px; border: 1px solid #dfe8e5; border-radius: 8px; background: #f8fbfa; }
+      :root[data-theme="dark"] .bulk-card { border-color: #25483f; background: #0d1d1a; }
+      .bulk-card strong, .bulk-card span { display: block; }
+      .bulk-card .muted { font-size: .86rem; }
+      .bulk-actions { display: flex; align-items: center; gap: 4px; }
+      .bulk-actions button { min-height: 38px; padding: 8px 10px; }
+      .bulk-card.needs-review { border-color: #d5963f; background: #fffaf0; }
+      :root[data-theme="dark"] .bulk-card.needs-review { border-color: #d8a65d; background: #302719; }
+      .bulk-card.error { border-color: #e0a8a8; background: #fff4f4; }
+      :root[data-theme="dark"] .bulk-card.error { border-color: #7b3838; background: #2b1717; }
       textarea, input, select { width: 100%; min-width: 0; max-width: 100%; min-height: 50px; border: 1px solid #d5dfdc; border-radius: 8px; padding: 12px 14px; outline: none; background: white; }
       input[type="date"] { display: block; min-width: 0; max-width: 100%; -webkit-appearance: none; appearance: none; line-height: 1.2; }
       input[type="date"]::-webkit-date-and-time-value { min-height: 1.2em; text-align: left; }
@@ -226,6 +241,8 @@
         .form-grid > label, .form-grid input, .form-grid select { min-width: 0; width: 100%; max-width: 100%; }
         .growth-head { display: grid; }
         .growth-stats { grid-template-columns: 1fr; }
+        .bulk-card { grid-template-columns: 1fr; }
+        .bulk-actions { justify-content: flex-end; }
         .holding { grid-template-columns: 1fr; }
         .records-head { flex-direction: column; }
         .account-popover { right: 0; width: min(200px, calc(100vw - 32px)); }
@@ -244,7 +261,7 @@
   </head>
   <body>
     <main class="app">
-      <input id="file" hidden type="file" accept="image/*" />
+      <input id="file" hidden type="file" accept="image/*" multiple />
       <header>
         <button class="icon-btn theme-toggle" id="themeToggle" aria-label="Switch to dark mode">&#9790;</button>
         <div>
@@ -319,11 +336,21 @@
 
       <section data-panel="capture">
         <h2>Capture trade screenshot</h2>
-        <p>Attach proof of each buy or sell, then review the numbers before saving.</p>
+        <p>Attach one or more receipts, then review the numbers before saving.</p>
         <div class="capture-actions">
-          <button id="uploadReceipt">Upload receipt</button>
+          <button id="uploadReceipt">Upload receipt photos</button>
         </div>
         <div class="preview" id="preview"><img id="previewImg" alt="Uploaded transaction screenshot" /></div>
+        <div class="bulk-review" id="bulkReview">
+          <div class="bulk-head">
+            <div>
+              <h2>Review uploaded receipts</h2>
+              <p id="bulkSummary">No receipts queued.</p>
+            </div>
+            <button class="primary" id="saveBulk" type="button">Save confirmed</button>
+          </div>
+          <div class="bulk-list" id="bulkList"></div>
+        </div>
       </section>
 
       <section data-panel="capture">
@@ -434,6 +461,8 @@
       let successPopupTimer = null;
       let liffReady = false;
       let liffInitPromise = null;
+      let bulkDrafts = [];
+      let bulkBusy = false;
       const $ = (id) => document.getElementById(id);
       const money = (v, currency = 'THB') => new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number.isFinite(v) ? v : 0);
       const num = (v) => new Intl.NumberFormat('en-US', { maximumFractionDigits: 4 }).format(Number.isFinite(v) ? v : 0);
@@ -1069,6 +1098,131 @@
         clearTimeout(successPopupTimer);
         successPopupTimer = setTimeout(hideSaveSuccess, 5200);
       }
+      function readFileAsDataUrl(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(reader.error || new Error('Could not read image file.'));
+          reader.readAsDataURL(file);
+        });
+      }
+      function parsedToDraft(parsed, image, fileName = '') {
+        const fee = Number(parsed.fee) || (Number(parsed.commission) || 0) + (Number(parsed.vat) || 0);
+        const dateReliable = validIsoDate(parsed.date) && Number(parsed.dateConfidence) >= 0.8;
+        return {
+          id: crypto.randomUUID(),
+          fileName,
+          image,
+          symbol: parsed.symbol ? String(parsed.symbol).toUpperCase() : '',
+          side: parsed.side && parsed.side !== 'unknown' ? parsed.side : 'buy',
+          currency: parsed.currency || 'THB',
+          date: dateReliable ? parsed.date : '',
+          shares: Number(parsed.shares) || 0,
+          price: Number(parsed.price) || 0,
+          stockValue: Number(parsed.stockValue) || 0,
+          fee: fee ? Number(fee.toFixed(6)) : 0,
+          confidence: Number(parsed.confidence) || 0,
+          dateReliable,
+          notes: parsed.notes || '',
+          status: 'ready',
+        };
+      }
+      function draftIsValid(draft) {
+        return Boolean(draft.symbol && Number(draft.shares) > 0 && Number(draft.price) > 0);
+      }
+      function draftToTransaction(draft) {
+        return {
+          id: draft.id,
+          symbol: String(draft.symbol || '').trim().toUpperCase(),
+          side: draft.side === 'sell' ? 'sell' : 'buy',
+          date: draft.date || new Date().toISOString().slice(0, 10),
+          shares: Number(draft.shares) || 0,
+          price: Number(draft.price) || 0,
+          stockValue: Number(draft.stockValue) || (Number(draft.shares) || 0) * (Number(draft.price) || 0),
+          currency: draft.currency === 'USD' ? 'USD' : 'THB',
+          fee: Number(draft.fee) || 0,
+          screenshot: draft.image || '',
+        };
+      }
+      async function extractImageDraft(image, fileName = '') {
+        try {
+          const response = await fetch('/api/extract', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image }),
+          });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error || 'AI extraction failed.');
+          return parsedToDraft(data, image, fileName);
+        } catch (error) {
+          if (!window.Tesseract) throw error;
+          const result = await Tesseract.recognize(image, 'tha+eng');
+          return parsedToDraft(parseBrokerText(result.data.text), image, fileName);
+        }
+      }
+      function loadDraftIntoForm(id) {
+        const draft = bulkDrafts.find((item) => item.id === id);
+        if (!draft) return;
+        screenshot = draft.image || '';
+        $('previewImg').src = screenshot;
+        $('preview').style.display = screenshot ? 'block' : 'none';
+        $('symbol').value = draft.symbol || '';
+        $('side').value = draft.side || 'buy';
+        $('currency').value = draft.currency || 'THB';
+        $('date').value = draft.date || new Date().toISOString().slice(0, 10);
+        $('shares').value = draft.shares || '';
+        $('price').value = draft.price || '';
+        $('fee').value = draft.fee || '';
+        setDateReviewWarning(!draft.dateReliable);
+        updateDraftTotal();
+      }
+      function syncCurrentFormToLoadedDraft() {
+        if (!screenshot) return;
+        const draft = bulkDrafts.find((item) => item.image === screenshot);
+        if (!draft) return;
+        draft.symbol = $('symbol').value.trim().toUpperCase();
+        draft.side = $('side').value;
+        draft.currency = $('currency').value;
+        draft.date = $('date').value;
+        draft.shares = Number($('shares').value) || 0;
+        draft.price = Number($('price').value) || 0;
+        draft.stockValue = Number($('stockValue').value) || draft.shares * draft.price;
+        draft.fee = Number($('fee').value) || 0;
+        draft.dateReliable = validIsoDate(draft.date);
+        renderBulkDrafts();
+      }
+      function removeBulkDraft(id) {
+        bulkDrafts = bulkDrafts.filter((draft) => draft.id !== id);
+        renderBulkDrafts();
+      }
+      window.loadDraftIntoForm = loadDraftIntoForm;
+      window.removeBulkDraft = removeBulkDraft;
+      function renderBulkDrafts() {
+        const validCount = bulkDrafts.filter(draftIsValid).length;
+        $('bulkReview').classList.toggle('open', bulkDrafts.length > 0 || bulkBusy);
+        $('saveBulk').disabled = bulkBusy || !validCount;
+        $('bulkSummary').textContent = bulkBusy
+          ? `Reading receipt ${validCount + 1}...`
+          : `${validCount} of ${bulkDrafts.length} receipts ready to save. Tap Edit to review a row.`;
+        $('bulkList').innerHTML = bulkDrafts.map((draft) => {
+          const valid = draftIsValid(draft);
+          const needsReview = valid && !draft.dateReliable;
+          const classes = ['bulk-card', valid ? '' : 'error', needsReview ? 'needs-review' : ''].filter(Boolean).join(' ');
+          const total = (Number(draft.stockValue) || Number(draft.shares) * Number(draft.price)) + (Number(draft.fee) || 0);
+          return `
+            <article class="${classes}">
+              <div>
+                <strong>${draft.symbol || 'Missing symbol'} · ${String(draft.side || 'buy').toUpperCase()}</strong>
+                <span class="muted">${draft.date || 'Check date'} · ${num(Number(draft.shares) || 0)} shares at ${money(Number(draft.price) || 0, draft.currency || 'THB')}</span>
+                <span class="muted">${draft.fileName || 'Receipt photo'} · Total ${money(total, draft.currency || 'THB')}${needsReview ? ' · Check date' : ''}${valid ? '' : ' · Needs review'}</span>
+              </div>
+              <div class="bulk-actions">
+                <button class="secondary" type="button" onclick="loadDraftIntoForm('${draft.id}')">Edit</button>
+                <button class="secondary" type="button" onclick="removeBulkDraft('${draft.id}')">Remove</button>
+              </div>
+            </article>`;
+        }).join('');
+      }
       function resetCapture() {
         extractionRunId += 1;
         extractionController?.abort();
@@ -1217,24 +1371,61 @@
         $('file').value = '';
         $('file').click();
       });
-      $('file').addEventListener('change', (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
+      $('file').addEventListener('change', async (event) => {
+        const files = [...event.target.files];
+        if (!files.length) return;
         const runId = ++extractionRunId;
         extractionController?.abort();
         extractionController = null;
         setDateReviewWarning(false);
         setStatus('');
-        const reader = new FileReader();
-        reader.onload = () => {
+        setTab('capture');
+        if (files.length === 1) {
+          const image = await readFileAsDataUrl(files[0]);
           if (runId !== extractionRunId) return;
-          screenshot = reader.result;
+          screenshot = image;
           $('previewImg').src = screenshot;
           $('preview').style.display = 'block';
-          setTab('capture');
           setTimeout(() => aiReadScreenshot(runId), 250);
-        };
-        reader.readAsDataURL(file);
+          return;
+        }
+        bulkBusy = true;
+        bulkDrafts = [];
+        renderBulkDrafts();
+        setStatus(`Reading ${files.length} receipts...`, true);
+        for (let index = 0; index < files.length; index += 1) {
+          if (runId !== extractionRunId) return;
+          setStatus(`Reading receipt ${index + 1} of ${files.length}...`, true);
+          try {
+            const image = await readFileAsDataUrl(files[index]);
+            const draft = await extractImageDraft(image, files[index].name);
+            bulkDrafts.push(draft);
+          } catch (error) {
+            bulkDrafts.push({
+              id: crypto.randomUUID(),
+              fileName: files[index].name,
+              image: '',
+              symbol: '',
+              side: 'buy',
+              currency: 'THB',
+              date: '',
+              shares: 0,
+              price: 0,
+              stockValue: 0,
+              fee: 0,
+              confidence: 0,
+              dateReliable: false,
+              notes: error.message || 'Could not read this receipt.',
+              status: 'error',
+            });
+          }
+          renderBulkDrafts();
+        }
+        bulkBusy = false;
+        renderBulkDrafts();
+        setStatus(`${bulkDrafts.filter(draftIsValid).length} receipts ready. Review before saving.`);
+        const firstDraft = bulkDrafts.find(draftIsValid) || bulkDrafts[0];
+        if (firstDraft) loadDraftIntoForm(firstDraft.id);
       });
       $('refreshPrices').addEventListener('click', refreshStockPrices);
       $('accountLogin').addEventListener('click', lineLogin);
@@ -1255,7 +1446,11 @@
           $('accountPopover').classList.remove('open');
         }
       });
-      ['shares', 'price', 'fee'].forEach((id) => $(id).addEventListener('input', updateDraftTotal));
+      ['shares', 'price', 'fee'].forEach((id) => $(id).addEventListener('input', () => {
+        updateDraftTotal();
+        syncCurrentFormToLoadedDraft();
+      }));
+      ['symbol', 'side', 'currency', 'date'].forEach((id) => $(id).addEventListener('input', syncCurrentFormToLoadedDraft));
       $('date').addEventListener('change', () => setDateReviewWarning(false));
       $('currency').addEventListener('change', updateDraftTotal);
       $('displayCurrency').addEventListener('change', () => {
@@ -1267,6 +1462,33 @@
         state.profitView = $('profitView').value;
         saveState();
         render();
+      });
+      $('saveBulk').addEventListener('click', async () => {
+        syncCurrentFormToLoadedDraft();
+        const drafts = bulkDrafts.filter(draftIsValid);
+        if (!drafts.length) return;
+        $('saveBulk').disabled = true;
+        let savedCount = 0;
+        for (const draft of drafts) {
+          const tx = draftToTransaction(draft);
+          try {
+            const cloudTx = await saveCloudTransaction(tx);
+            state.txs.unshift(cloudTx || { ...tx, cloudSynced: false, pendingAction: 'create' });
+          } catch (error) {
+            state.txs.unshift({ ...tx, cloudSynced: false, pendingAction: 'create' });
+          }
+          savedCount += 1;
+          $('bulkSummary').textContent = `Saved ${savedCount} of ${drafts.length} receipts...`;
+        }
+        bulkDrafts = bulkDrafts.filter((draft) => !drafts.includes(draft));
+        saveState();
+        resetCapture();
+        renderBulkDrafts();
+        render();
+        refreshStockPrices();
+        setTab('records');
+        setLineStatus(`Saved ${savedCount} receipt transactions.`);
+        showSaveSuccess(draftToTransaction(drafts[0]), { cloudSynced: false });
       });
       $('save').addEventListener('click', async () => {
         const tx = {
