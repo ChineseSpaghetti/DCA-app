@@ -124,6 +124,31 @@
       .portfolio-actions select { width: auto; min-height: 44px; padding: 9px 34px 9px 12px; }
       .quote-note { color: #667875; font-size: .82rem; }
       :root[data-theme="dark"] .quote-note { color: #a7bbb5; }
+      .growth-head { display: flex; align-items: start; justify-content: space-between; gap: 12px; }
+      .growth-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
+      .growth-stat { padding: 10px 11px; border-radius: 8px; background: #f0f7f4; }
+      :root[data-theme="dark"] .growth-stat { background: #0d1d1a; }
+      .growth-stat span { display: block; color: #667875; font-size: .78rem; }
+      :root[data-theme="dark"] .growth-stat span { color: #a7bbb5; }
+      .growth-stat strong { display: block; margin-top: 2px; font-size: .95rem; }
+      .growth-chart { width: 100%; height: 210px; margin-top: 14px; overflow: visible; }
+      .growth-axis, .growth-grid { stroke: #dfe8e5; stroke-width: 1; }
+      :root[data-theme="dark"] .growth-axis, :root[data-theme="dark"] .growth-grid { stroke: #25483f; }
+      .growth-capital { fill: none; stroke: #8a9a96; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 6 6; }
+      .growth-value { fill: none; stroke: #00854d; stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; }
+      .growth-fill { fill: rgba(0, 133, 77, .1); stroke: none; }
+      :root[data-theme="dark"] .growth-fill { fill: rgba(132, 225, 176, .12); }
+      .growth-dot { fill: #00854d; stroke: white; stroke-width: 2; }
+      :root[data-theme="dark"] .growth-dot { stroke: #10221e; }
+      .growth-label { fill: #667875; font-size: 12px; font-weight: 700; }
+      :root[data-theme="dark"] .growth-label { fill: #a7bbb5; }
+      .growth-empty { padding: 28px 0 10px; color: #667875; text-align: center; }
+      :root[data-theme="dark"] .growth-empty { color: #a7bbb5; }
+      .legend { display: flex; flex-wrap: wrap; gap: 12px; color: #667875; font-size: .84rem; }
+      :root[data-theme="dark"] .legend { color: #a7bbb5; }
+      .legend span { display: inline-flex; align-items: center; gap: 6px; }
+      .legend i { width: 18px; height: 3px; display: inline-block; border-radius: 999px; background: #00854d; }
+      .legend .capital-key { background: #8a9a96; }
       .status { display: none; margin-top: 12px; padding: 11px 12px; border-radius: 8px; color: #005f40; background: #e8f7ef; font-size: .9rem; font-weight: 800; }
       :root[data-theme="dark"] .status { color: #b6f2d0; background: #14352d; }
       .status-content { display: inline-flex; align-items: center; gap: 9px; }
@@ -199,6 +224,8 @@
         .tabs { display: none; }
         .form-grid, .capture-actions { grid-template-columns: 1fr; }
         .form-grid > label, .form-grid input, .form-grid select { min-width: 0; width: 100%; max-width: 100%; }
+        .growth-head { display: grid; }
+        .growth-stats { grid-template-columns: 1fr; }
         .holding { grid-template-columns: 1fr; }
         .records-head { flex-direction: column; }
         .account-popover { right: 0; width: min(200px, calc(100vw - 32px)); }
@@ -269,6 +296,26 @@
         <button data-tab="capture">Capture</button>
         <button data-tab="records">Records</button>
       </nav>
+
+      <section data-panel="overview">
+        <div class="growth-head">
+          <div>
+            <h2>Capital vs value</h2>
+            <p>Pure capital compared with capital plus current P/L.</p>
+          </div>
+          <div class="legend" aria-label="Chart legend">
+            <span><i class="capital-key"></i>Pure capital</span>
+            <span><i></i>Capital + P/L</span>
+          </div>
+        </div>
+        <div class="growth-stats">
+          <div class="growth-stat"><span>Capital</span><strong id="chartCapital">฿0.00</strong></div>
+          <div class="growth-stat"><span>Capital + P/L</span><strong id="chartValue">฿0.00</strong></div>
+          <div class="growth-stat"><span>Return</span><strong id="chartReturn">0.00%</strong></div>
+        </div>
+        <div id="growthChartWrap"></div>
+        <small class="quote-note">Uses current prices for value, not historical quote data.</small>
+      </section>
 
       <section data-panel="capture">
         <h2>Capture trade screenshot</h2>
@@ -668,6 +715,107 @@
           return { ...row, currentPrice, currentPriceCurrency, currentValue, quotedValue, avg, pl, pct: row.cost ? (pl / row.cost) * 100 : 0, quote };
         });
       }
+      function monthLabel(value) {
+        const [year, month] = String(value || '').split('-');
+        const date = new Date(Number(year), Number(month) - 1, 1);
+        return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('en-US', { month: 'short' });
+      }
+      function portfolioSnapshotRows(map) {
+        return [...map.values()].map((row) => {
+          const quote = priceQuote(row.symbol, row.currency);
+          const currentPrice = Number(quote?.price) || (row.quantity ? row.cost / row.quantity : 0);
+          const currentPriceCurrency = quote?.currency || row.currency;
+          const currentValue = convertAmount(row.quantity * currentPrice, currentPriceCurrency, row.currency);
+          return { ...row, currentValue };
+        });
+      }
+      function growthSeries(displayCurrency) {
+        const map = new Map();
+        const points = [];
+        const chronologicalTransactions = [...state.txs].sort((a, b) => {
+          const byDate = String(a.date || '').localeCompare(String(b.date || ''));
+          if (byDate) return byDate;
+          return String(a.createdAt || a.id || '').localeCompare(String(b.createdAt || b.id || ''));
+        });
+        chronologicalTransactions.forEach((tx) => {
+          const symbol = String(tx.symbol || '').toUpperCase();
+          if (!symbol) return;
+          const row = map.get(symbol) || { symbol, quantity: 0, cost: 0, currency: tx.currency || 'THB' };
+          const qty = Number(tx.shares) || 0;
+          const gross = Number(tx.stockValue) || qty * (Number(tx.price) || 0);
+          const fee = Number(tx.fee) || 0;
+          if (tx.side === 'sell') {
+            const avg = row.quantity ? row.cost / row.quantity : 0;
+            const matchedQty = Math.min(qty, row.quantity);
+            row.quantity -= matchedQty;
+            row.cost -= avg * matchedQty;
+          } else {
+            row.quantity += qty;
+            row.cost += gross + fee;
+          }
+          if (Math.abs(row.quantity) < 1e-10) row.quantity = 0;
+          if (Math.abs(row.cost) < 1e-10) row.cost = 0;
+          map.set(symbol, row);
+          const snapshots = portfolioSnapshotRows(map);
+          const capital = snapshots.reduce((sum, item) => sum + convertAmount(item.cost, item.currency, displayCurrency), 0);
+          const value = snapshots.reduce((sum, item) => sum + convertAmount(item.currentValue, item.currency, displayCurrency), 0);
+          const month = String(tx.date || '').slice(0, 7);
+          const previous = points[points.length - 1];
+          const point = { month, label: monthLabel(month), capital, value };
+          if (previous?.month === month) points[points.length - 1] = point;
+          else points.push(point);
+        });
+        return points;
+      }
+      function chartPath(points, chartHeight) {
+        return points.map((point, index) => `${index ? 'L' : 'M'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(' ');
+      }
+      function renderGrowthChart(displayCurrency) {
+        const points = growthSeries(displayCurrency);
+        const latest = points[points.length - 1] || { capital: 0, value: 0 };
+        const gain = latest.value - latest.capital;
+        $('chartCapital').textContent = money(latest.capital, displayCurrency);
+        $('chartValue').textContent = money(latest.value, displayCurrency);
+        $('chartReturn').textContent = `${latest.capital ? ((gain / latest.capital) * 100).toFixed(2) : '0.00'}%`;
+        $('chartReturn').className = gain >= 0 ? 'positive' : 'negative';
+        if (points.length < 2) {
+          $('growthChartWrap').innerHTML = `
+            <div class="growth-empty">
+              <strong>Add at least two months of records to draw the chart.</strong>
+            </div>`;
+          return;
+        }
+        const width = 640;
+        const height = 210;
+        const pad = { top: 18, right: 18, bottom: 34, left: 18 };
+        const values = points.flatMap((point) => [point.capital, point.value]);
+        const maxValue = Math.max(...values, 1);
+        const minValue = Math.min(...values, 0);
+        const span = Math.max(maxValue - minValue, 1);
+        const xStep = (width - pad.left - pad.right) / Math.max(points.length - 1, 1);
+        const chartPoints = points.map((point, index) => ({
+          ...point,
+          x: pad.left + index * xStep,
+          capitalY: pad.top + (1 - ((point.capital - minValue) / span)) * (height - pad.top - pad.bottom),
+          valueY: pad.top + (1 - ((point.value - minValue) / span)) * (height - pad.top - pad.bottom),
+        }));
+        const capitalLine = chartPath(chartPoints.map((point) => ({ x: point.x, y: point.capitalY })));
+        const valueLine = chartPath(chartPoints.map((point) => ({ x: point.x, y: point.valueY })));
+        const fillPath = `${valueLine} L ${chartPoints[chartPoints.length - 1].x.toFixed(1)} ${height - pad.bottom} L ${chartPoints[0].x.toFixed(1)} ${height - pad.bottom} Z`;
+        const finalPoint = chartPoints[chartPoints.length - 1];
+        $('growthChartWrap').innerHTML = `
+          <svg class="growth-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Capital versus value chart">
+            <line class="growth-grid" x1="${pad.left}" y1="${pad.top}" x2="${width - pad.right}" y2="${pad.top}"></line>
+            <line class="growth-grid" x1="${pad.left}" y1="${(height - pad.bottom + pad.top) / 2}" x2="${width - pad.right}" y2="${(height - pad.bottom + pad.top) / 2}"></line>
+            <line class="growth-axis" x1="${pad.left}" y1="${height - pad.bottom}" x2="${width - pad.right}" y2="${height - pad.bottom}"></line>
+            <path class="growth-fill" d="${fillPath}"></path>
+            <path class="growth-capital" d="${capitalLine}"></path>
+            <path class="growth-value" d="${valueLine}"></path>
+            <circle class="growth-dot" cx="${finalPoint.x.toFixed(1)}" cy="${finalPoint.valueY.toFixed(1)}" r="5"></circle>
+            ${chartPoints.map((point) => `<text class="growth-label" x="${point.x.toFixed(1)}" y="${height - 8}" text-anchor="middle">${point.label}</text>`).join('')}
+            <text class="growth-label" x="${Math.max(pad.left + 42, finalPoint.x - 46).toFixed(1)}" y="${Math.max(14, finalPoint.valueY - 12).toFixed(1)}">${gain >= 0 ? '+' : ''}${money(gain, displayCurrency)}</text>
+          </svg>`;
+      }
       function render() {
         const rows = holdings();
         const displayCurrency = state.displayCurrency || 'THB';
@@ -694,6 +842,7 @@
         $('realizedProfit').textContent = money(realized, displayCurrency);
         $('realizedProfit').className = realized >= 0 ? 'positive' : 'negative';
         $('fxNote').textContent = `FX: 1 USD = ${num(Number(state.fx?.rate) || 0)} THB`;
+        renderGrowthChart(displayCurrency);
         $('quoteNote').textContent = state.quoteMeta?.updatedAt
           ? `Updated ${new Date(state.quoteMeta.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
           : 'Using saved prices';
