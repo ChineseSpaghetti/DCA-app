@@ -7,7 +7,7 @@ Add these Vercel environment variables:
 ```text
 SUPABASE_URL=https://your-project-ref.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-LINE_CHANNEL_ID=2010225094
+LINE_LOGIN_CHANNEL_ID=2010225094
 LINE_CHANNEL_SECRET=your_messaging_api_channel_secret
 LINE_CHANNEL_ACCESS_TOKEN=your_messaging_api_channel_access_token
 GEMINI_API_KEY=your_gemini_api_key
@@ -21,6 +21,8 @@ when a receipt needs confirmation. Final saved records still go into `transactio
 
 The frontend sends its LIFF access token to the Vercel API. The API verifies that token with LINE,
 retrieves the LINE profile server-side, and uses the verified LINE user ID for Supabase queries.
+`LINE_LOGIN_CHANNEL_ID` is the LINE Login / LIFF channel id. Do not replace it with the
+Messaging API channel id from the Official Account.
 
 ## LINE Chat Bot Setup
 

@@ -26,7 +26,7 @@ export async function requireLineUser(request) {
   }
 
   const verification = await lineFetch(`https://api.line.me/oauth2/v2.1/verify?access_token=${encodeURIComponent(accessToken)}`);
-  const expectedChannelId = String(process.env.LINE_CHANNEL_ID || DEFAULT_LINE_CHANNEL_ID);
+  const expectedChannelId = String(process.env.LINE_LOGIN_CHANNEL_ID || DEFAULT_LINE_CHANNEL_ID);
   if (String(verification.client_id) !== expectedChannelId) {
     const error = new Error('LINE access token belongs to a different app.');
     error.status = 401;
