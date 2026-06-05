@@ -467,6 +467,7 @@
       let bulkDrafts = [];
       let selectedBulkDraftId = '';
       let bulkBusy = false;
+      let lastCloudRefreshAt = 0;
       const $ = (id) => document.getElementById(id);
       const money = (v, currency = 'THB') => new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number.isFinite(v) ? v : 0);
       const num = (v) => new Intl.NumberFormat('en-US', { maximumFractionDigits: 4 }).format(Number.isFinite(v) ? v : 0);
@@ -559,6 +560,7 @@
       async function loadCloudTransactions() {
         const lineUserId = cloudUserId();
         if (!lineUserId) return;
+        lastCloudRefreshAt = Date.now();
         setLineStatus('Loading cloud transactions...');
         try {
           if (state.cloudOwnerId && state.cloudOwnerId !== lineUserId) {
@@ -572,7 +574,7 @@
               await saveCloudTransaction(tx);
             }
           }
-          const response = await fetch('/api/transactions', { headers: cloudHeaders() });
+          const response = await fetch(`/api/transactions?ts=${Date.now()}`, { headers: cloudHeaders(), cache: 'no-store' });
           const data = await response.json();
           if (response.status === 501) {
             setLineStatus('LINE connected. Cloud database is not configured yet; using this browser only.');
@@ -588,6 +590,10 @@
         } catch (error) {
           setLineStatus(`LINE connected. Using local data because cloud load failed: ${error.message || ''}`);
         }
+      }
+      async function refreshCloudTransactionsIfStale() {
+        if (!cloudUserId() || Date.now() - lastCloudRefreshAt < 8000) return;
+        await loadCloudTransactions();
       }
       async function saveCloudTransaction(tx) {
         const lineUserId = cloudUserId();
@@ -1512,6 +1518,10 @@
         state.profitView = $('profitView').value;
         saveState();
         render();
+      });
+      window.addEventListener('focus', refreshCloudTransactionsIfStale);
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) refreshCloudTransactionsIfStale();
       });
       $('saveBulk').addEventListener('click', async () => {
         syncCurrentFormToLoadedDraft();

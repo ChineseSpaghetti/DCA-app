@@ -3,6 +3,8 @@ import { supabaseReady } from './_supabase.js';
 import { deleteTransaction, listTransactions, saveTransaction, updateTransaction } from './_transactions-store.js';
 
 export default async function handler(request, response) {
+  response.setHeader('Cache-Control', 'no-store, max-age=0');
+
   if (!supabaseReady()) {
     response.status(501).json({ error: 'Supabase is not configured. Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in Vercel.' });
     return;
