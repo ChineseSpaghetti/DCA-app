@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
-import { classifyPortfolioQuestion, extractTransactionFromImage } from './_gemini-extract.js';
+import { classifyPortfolioQuestion, extractTransactionFromImage, polishPortfolioAnswer } from './_gemini-extract.js';
 import { lineBotReady, downloadLineImage, pendingConfirmMessage, replyLine, textMessage } from './_line-bot.js';
 import { buildPortfolio, answerPortfolioQuestion, formatTransaction, portfolioHelpMessage } from './_portfolio.js';
 import { supabaseReady } from './_supabase.js';
@@ -130,7 +130,12 @@ async function handleTextEvent(event) {
   }
   const transactions = await listTransactions(lineUserId);
   const portfolio = await buildPortfolio(transactions);
-  const answer = answerPortfolioQuestion(intent, transactions, portfolio);
+  const factualAnswer = answerPortfolioQuestion(intent, transactions, portfolio);
+  const answer = await polishPortfolioAnswer({
+    userMessage: text,
+    factualAnswer,
+    intent,
+  });
   await replyLine(event.replyToken, textMessage(answer));
 }
 

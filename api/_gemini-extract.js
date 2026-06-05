@@ -40,6 +40,38 @@ async function generateGeminiJson({ apiKey, contents, schema, temperature = 0 })
   throw lastError || new Error('Gemini model unavailable.');
 }
 
+async function generateGeminiText({ apiKey, contents, temperature = 0.35 }) {
+  const requestOptions = {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents,
+      generationConfig: {
+        temperature,
+      },
+    }),
+  };
+
+  let lastError;
+  for (const model of GEMINI_MODELS) {
+    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, requestOptions);
+    const geminiData = await geminiResponse.json();
+    if (geminiResponse.status === 404) {
+      lastError = new Error(JSON.stringify(geminiData));
+      continue;
+    }
+    if (!geminiResponse.ok) {
+      const error = new Error(JSON.stringify(geminiData));
+      error.status = geminiResponse.status;
+      throw error;
+    }
+    const text = geminiData.candidates?.[0]?.content?.parts?.find((part) => part.text)?.text;
+    if (!text) throw new Error('No text output returned by Gemini.');
+    return text.trim();
+  }
+  throw lastError || new Error('Gemini model unavailable.');
+}
+
 export async function extractTransactionFromImage(image) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -104,7 +136,7 @@ export async function classifyPortfolioQuestion(text) {
     properties: {
       intent: {
         type: 'STRING',
-        enum: ['portfolio_summary', 'symbol_holding', 'unrealized_profit', 'realized_profit', 'average_cost', 'total_value', 'top_gain', 'top_loss', 'recent_records', 'help', 'unknown'],
+        enum: ['portfolio_summary', 'symbol_holding', 'unrealized_profit', 'realized_profit', 'average_cost', 'total_value', 'top_gain', 'top_loss', 'recent_records', 'portfolio_advice', 'help', 'unknown'],
       },
       symbol: { type: 'STRING' },
       limit: { type: 'NUMBER' },
@@ -123,10 +155,48 @@ export async function classifyPortfolioQuestion(text) {
         role: 'user',
         parts: [
           {
-            text: `Classify this LINE chat message from a Thai retail investor using a DCA portfolio app. Return only the requested JSON. Choose help for greetings or requests for examples. Choose unknown for unrelated text. Normalize Thai/US stock symbols to uppercase when present.\n\nMessage: ${String(text || '').slice(0, 500)}`,
+            text: `Classify this LINE chat message from a Thai retail investor using a DCA portfolio app. Return only the requested JSON. Choose portfolio_advice when the user asks for suggestions, review, what to do next, risk, allocation, or general portfolio observations. Choose help for greetings or requests for examples. Choose unknown for unrelated text. Normalize Thai/US stock symbols to uppercase when present.\n\nMessage: ${String(text || '').slice(0, 500)}`,
           },
         ],
       },
     ],
   });
+}
+
+export async function polishPortfolioAnswer({ userMessage, factualAnswer, intent }) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return factualAnswer;
+  const prompt = [
+    'You are a friendly Thai DCA portfolio assistant inside LINE chat.',
+    'Rewrite the factual portfolio answer into a natural, concise response.',
+    'Use Thai if the user wrote Thai or mixed Thai. Otherwise use English.',
+    'Very important rules:',
+    '- Never change, add, remove, or recalculate any numeric value from the factual answer.',
+    '- Do not invent holdings, prices, profit, losses, or transactions.',
+    '- Do not give personalized buy/sell/hold recommendations for specific stocks.',
+    '- You may suggest safe next checks, such as reviewing allocation, concentration risk, DCA consistency, realized vs unrealized profit, fees, or asking a follow-up question.',
+    '- Keep it under 900 characters and suitable for a LINE chat bubble.',
+    '- If the factual answer is a help message or says there is no data, keep it practical and brief.',
+    '',
+    `User message: ${String(userMessage || '').slice(0, 500)}`,
+    `Intent: ${JSON.stringify(intent || {})}`,
+    'Factual answer, numbers must stay exactly as-is:',
+    factualAnswer,
+  ].join('\n');
+
+  try {
+    const text = await generateGeminiText({
+      apiKey,
+      temperature: 0.35,
+      contents: [
+        {
+          role: 'user',
+          parts: [{ text: prompt }],
+        },
+      ],
+    });
+    return text || factualAnswer;
+  } catch {
+    return factualAnswer;
+  }
 }

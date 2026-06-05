@@ -86,7 +86,7 @@ export async function buildPortfolio(transactions, displayCurrency = 'THB') {
 
 export function formatTransaction(tx) {
   const total = (Number(tx.stockValue) || Number(tx.shares) * Number(tx.price)) + (Number(tx.fee) || 0);
-  return `${String(tx.side || 'buy').toUpperCase()} ${num(Number(tx.shares) || 0)} ${tx.symbol}\n${tx.date || 'No date'} · ${money(Number(tx.price) || 0, tx.currency || 'THB')} each\nTotal ${money(total, tx.currency || 'THB')}`;
+  return `${String(tx.side || 'buy').toUpperCase()} ${num(Number(tx.shares) || 0)} ${tx.symbol}\n${tx.date || 'No date'} - ${money(Number(tx.price) || 0, tx.currency || 'THB')} each\nTotal ${money(total, tx.currency || 'THB')}`;
 }
 
 export function portfolioHelpMessage() {
@@ -94,11 +94,12 @@ export function portfolioHelpMessage() {
     'Send a stock receipt screenshot to save a record.',
     '',
     'You can also ask:',
-    '• How is my portfolio?',
-    '• How much QQQM do I own?',
-    '• Profit for SCB',
-    '• Average cost QQQM',
-    '• Recent records',
+    '- How is my portfolio?',
+    '- How much QQQM do I own?',
+    '- Profit for SCB',
+    '- Average cost QQQM',
+    '- Any suggestions?',
+    '- Recent records',
   ].join('\n');
 }
 
@@ -117,7 +118,7 @@ export function answerPortfolioQuestion(intent, transactions, portfolio) {
 
   if (intent.intent === 'recent_records') {
     const limit = Math.min(Math.max(Number(intent.limit) || 5, 1), 8);
-    return transactions.slice(0, limit).map((tx) => `${tx.symbol} · ${String(tx.side || '').toUpperCase()}\n${tx.date} · ${num(Number(tx.shares) || 0)} shares at ${money(Number(tx.price) || 0, tx.currency || 'THB')}`).join('\n\n');
+    return transactions.slice(0, limit).map((tx) => `${tx.symbol} - ${String(tx.side || '').toUpperCase()}\n${tx.date} - ${num(Number(tx.shares) || 0)} shares at ${money(Number(tx.price) || 0, tx.currency || 'THB')}`).join('\n\n');
   }
 
   if (['symbol_holding', 'average_cost', 'unrealized_profit', 'realized_profit'].includes(intent.intent) && symbol) {
@@ -143,7 +144,24 @@ export function answerPortfolioQuestion(intent, transactions, portfolio) {
     return sorted.map((row, index) => `${index + 1}. ${row.symbol}: ${money(row.pl, row.currency)} (${row.pct.toFixed(2)}%)`).join('\n');
   }
 
-  const top = rows.slice(0, 5).map((row) => `${row.symbol}: ${money(convertAmount(row.currentValue, row.currency, currency, portfolio.fxRate), currency)} · P/L ${money(row.pl, row.currency)} (${row.pct.toFixed(2)}%)`);
+  if (intent.intent === 'portfolio_advice') {
+    const largest = rows[0];
+    const laggard = rows
+      .filter((row) => row.quantity > 0)
+      .sort((a, b) => a.pl - b.pl)[0];
+    return [
+      'Portfolio review facts',
+      `Cost: ${money(portfolio.cost, currency)}`,
+      `Value: ${money(portfolio.value, currency)}`,
+      `Unrealized P/L: ${money(portfolio.unrealized, currency)}`,
+      `Realized P/L: ${money(portfolio.realized, currency)}`,
+      largest ? `Largest allocation: ${largest.symbol} ${largest.allocation.toFixed(2)}%` : '',
+      laggard ? `Lowest unrealized P/L: ${laggard.symbol} ${money(laggard.pl, laggard.currency)} (${laggard.pct.toFixed(2)}%)` : '',
+      'Safe suggestions: review concentration, check whether your DCA plan is still consistent, compare realized vs unrealized profit, and avoid making decisions from one screenshot alone.',
+    ].filter(Boolean).join('\n');
+  }
+
+  const top = rows.slice(0, 5).map((row) => `${row.symbol}: ${money(convertAmount(row.currentValue, row.currency, currency, portfolio.fxRate), currency)} - P/L ${money(row.pl, row.currency)} (${row.pct.toFixed(2)}%)`);
   return [
     'Portfolio summary',
     `Cost: ${money(portfolio.cost, currency)}`,
