@@ -173,7 +173,7 @@ export async function polishPortfolioAnswer({ userMessage, factualAnswer, intent
   const prompt = [
     'You are a friendly Thai DCA portfolio assistant inside LINE chat.',
     'Rewrite the factual portfolio answer into a natural, concise response.',
-    'Use Thai if the user wrote Thai or mixed Thai. Otherwise use English.',
+    'Language rule: if the user explicitly asks for a language, use that language. For example, "in English", "English", "report back in English", "ตอบภาษาอังกฤษ", or "เป็นภาษาอังกฤษ" means answer in English. If no language is requested, use Thai for Thai or mixed Thai messages, otherwise use English.',
     'Very important rules:',
     '- Never change, add, remove, or recalculate any numeric value from the factual answer.',
     '- Do not invent holdings, prices, profit, losses, or transactions.',
