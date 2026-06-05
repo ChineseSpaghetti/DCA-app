@@ -10,7 +10,8 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 LINE_LOGIN_CHANNEL_ID=2010225094
 LINE_CHANNEL_SECRET=your_messaging_api_channel_secret
 LINE_CHANNEL_ACCESS_TOKEN=your_messaging_api_channel_access_token
-GEMINI_API_KEY=your_gemini_api_key
+GEMINI_API_KEY=your_image_extraction_gemini_api_key
+GEMINI_CHAT_API_KEY=your_chatbot_gemini_api_key
 ```
 
 Do not put the service role key in frontend code. It is only used inside Vercel API routes.
@@ -23,6 +24,9 @@ The frontend sends its LIFF access token to the Vercel API. The API verifies tha
 retrieves the LINE profile server-side, and uses the verified LINE user ID for Supabase queries.
 `LINE_LOGIN_CHANNEL_ID` is the LINE Login / LIFF channel id. Do not replace it with the
 Messaging API channel id from the Official Account.
+`GEMINI_API_KEY` is used for receipt screenshot extraction. `GEMINI_CHAT_API_KEY` is used for
+LINE chatbot text intent and natural replies. If `GEMINI_CHAT_API_KEY` is missing, the chatbot
+falls back to `GEMINI_API_KEY`.
 
 ## LINE Chat Bot Setup
 

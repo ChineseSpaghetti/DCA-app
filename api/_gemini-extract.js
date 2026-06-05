@@ -1,5 +1,9 @@
 const GEMINI_MODELS = ['gemini-3.1-flash-lite', 'gemini-2.5-flash-lite'];
 
+function chatApiKey() {
+  return process.env.GEMINI_CHAT_API_KEY || process.env.GEMINI_API_KEY;
+}
+
 export function splitDataUrl(dataUrl) {
   const [header, data] = String(dataUrl || '').split(',');
   const mimeType = header.split(';')[0].replace('data:', '');
@@ -125,9 +129,9 @@ export async function extractTransactionFromImage(image) {
 }
 
 export async function classifyPortfolioQuestion(text) {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = chatApiKey();
   if (!apiKey) {
-    const error = new Error('Set GEMINI_API_KEY in Vercel project environment variables.');
+    const error = new Error('Set GEMINI_CHAT_API_KEY or GEMINI_API_KEY in Vercel project environment variables.');
     error.status = 500;
     throw error;
   }
@@ -164,7 +168,7 @@ export async function classifyPortfolioQuestion(text) {
 }
 
 export async function polishPortfolioAnswer({ userMessage, factualAnswer, intent }) {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = chatApiKey();
   if (!apiKey) return factualAnswer;
   const prompt = [
     'You are a friendly Thai DCA portfolio assistant inside LINE chat.',
@@ -176,6 +180,8 @@ export async function polishPortfolioAnswer({ userMessage, factualAnswer, intent
     '- Answer only the specific thing the user asked. Do not include extra portfolio fields just because they are available.',
     '- Do not use Markdown formatting. Do not use **bold**, headings, tables, code blocks, or decorative bullets.',
     '- Plain text only. Short line breaks are okay.',
+    '- Tasteful emoji decoration is encouraged when it fits the answer, for example one or two relevant emojis like 📊, 💚, ✅, ⚠️, or 🔎.',
+    '- Do not overuse emojis. Avoid emoji-only lines.',
     '- Do not give personalized buy/sell/hold recommendations for specific stocks.',
     '- Only add safe next-check suggestions if the user asked for advice, review, suggestions, or what to do next.',
     '- Keep it under 700 characters and suitable for a LINE chat bubble.',
