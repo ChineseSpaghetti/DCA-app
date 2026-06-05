@@ -124,6 +124,15 @@ export function answerPortfolioQuestion(intent, transactions, portfolio) {
   if (['symbol_holding', 'average_cost', 'unrealized_profit', 'realized_profit'].includes(intent.intent) && symbol) {
     const row = findRow();
     if (!row) return `I do not see ${symbol} in your records yet.`;
+    if (intent.intent === 'average_cost') {
+      return [`${row.symbol}`, `Avg: ${money(row.avg, row.currency)}`].join('\n');
+    }
+    if (intent.intent === 'unrealized_profit') {
+      return [`${row.symbol}`, `Unrealized P/L: ${money(row.pl, row.currency)} (${row.pct.toFixed(2)}%)`].join('\n');
+    }
+    if (intent.intent === 'realized_profit') {
+      return [`${row.symbol}`, `Realized P/L: ${money(row.realized, row.currency)}`].join('\n');
+    }
     return [
       `${row.symbol}`,
       `Qty: ${num(row.quantity)}`,
