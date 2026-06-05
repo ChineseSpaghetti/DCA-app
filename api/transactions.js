@@ -1,80 +1,6 @@
 import { requireLineUser } from './_line-auth.js';
-
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const TABLE = 'transactions';
-
-function supabaseReady() {
-  return Boolean(SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY);
-}
-
-function headers(extra = {}) {
-  return {
-    apikey: SUPABASE_SERVICE_ROLE_KEY,
-    Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-    'Content-Type': 'application/json',
-    ...extra,
-  };
-}
-
-function uuid(value) {
-  const clean = String(value || '').trim();
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(clean) ? clean : undefined;
-}
-
-function cleanTransaction(lineUserId, input) {
-  return {
-    client_id: uuid(input.clientId || input.id),
-    line_user_id: lineUserId,
-    symbol: String(input.symbol || '').trim().toUpperCase(),
-    side: input.side === 'sell' ? 'sell' : 'buy',
-    currency: input.currency === 'USD' ? 'USD' : 'THB',
-    date: input.date || new Date().toISOString().slice(0, 10),
-    shares: Number(input.shares) || 0,
-    price: Number(input.price) || 0,
-    stock_value: Number(input.stockValue) || 0,
-    fee: Number(input.fee) || 0,
-  };
-}
-
-function fromDb(row) {
-  return {
-    id: row.id,
-    symbol: row.symbol,
-    side: row.side,
-    currency: row.currency,
-    date: row.date,
-    shares: Number(row.shares) || 0,
-    price: Number(row.price) || 0,
-    stockValue: Number(row.stock_value) || 0,
-    fee: Number(row.fee) || 0,
-    createdAt: row.created_at,
-    clientId: row.client_id,
-    cloudSynced: true,
-  };
-}
-
-function withoutClientId(tx) {
-  const { client_id, ...legacyTx } = tx;
-  return legacyTx;
-}
-
-function isLegacySchemaError(error) {
-  return /client_id|on conflict|unique or exclusion constraint/i.test(error.message || '');
-}
-
-async function supabaseFetch(path, options = {}) {
-  const response = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    ...options,
-    headers: headers(options.headers),
-  });
-  const text = await response.text();
-  const data = text ? JSON.parse(text) : null;
-  if (!response.ok) {
-    throw new Error(data?.message || text || `Supabase error ${response.status}`);
-  }
-  return data;
-}
+import { supabaseReady } from './_supabase.js';
+import { deleteTransaction, listTransactions, saveTransaction, updateTransaction } from './_transactions-store.js';
 
 export default async function handler(request, response) {
   if (!supabaseReady()) {
@@ -86,33 +12,12 @@ export default async function handler(request, response) {
     const lineUserId = (await requireLineUser(request)).userId;
 
     if (request.method === 'GET') {
-      const rows = await supabaseFetch(`${TABLE}?line_user_id=eq.${encodeURIComponent(lineUserId)}&order=date.desc,created_at.desc&select=*`);
-      response.status(200).json({ transactions: rows.map(fromDb) });
+      response.status(200).json({ transactions: await listTransactions(lineUserId) });
       return;
     }
 
     if (request.method === 'POST') {
-      const tx = cleanTransaction(lineUserId, request.body || {});
-      if (!tx.symbol || !tx.shares || !tx.price) {
-        response.status(400).json({ error: 'Symbol, shares, and price are required.' });
-        return;
-      }
-      let rows;
-      try {
-        rows = await supabaseFetch(`${TABLE}?on_conflict=line_user_id,client_id`, {
-          method: 'POST',
-          headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
-          body: JSON.stringify(tx),
-        });
-      } catch (error) {
-        if (!isLegacySchemaError(error)) throw error;
-        rows = await supabaseFetch(TABLE, {
-          method: 'POST',
-          headers: { Prefer: 'return=representation' },
-          body: JSON.stringify(withoutClientId(tx)),
-        });
-      }
-      response.status(200).json({ transaction: fromDb(rows[0]) });
+      response.status(200).json({ transaction: await saveTransaction(lineUserId, request.body || {}) });
       return;
     }
 
@@ -122,32 +27,7 @@ export default async function handler(request, response) {
         response.status(400).json({ error: 'Missing transaction id.' });
         return;
       }
-      const tx = cleanTransaction(lineUserId, request.body || {});
-      if (!tx.symbol || !tx.shares || !tx.price) {
-        response.status(400).json({ error: 'Symbol, shares, and price are required.' });
-        return;
-      }
-      const path = `${TABLE}?id=eq.${encodeURIComponent(id)}&line_user_id=eq.${encodeURIComponent(lineUserId)}`;
-      let rows;
-      try {
-        rows = await supabaseFetch(path, {
-          method: 'PATCH',
-          headers: { Prefer: 'return=representation' },
-          body: JSON.stringify(tx),
-        });
-      } catch (error) {
-        if (!isLegacySchemaError(error)) throw error;
-        rows = await supabaseFetch(path, {
-          method: 'PATCH',
-          headers: { Prefer: 'return=representation' },
-          body: JSON.stringify(withoutClientId(tx)),
-        });
-      }
-      if (!rows[0]) {
-        response.status(404).json({ error: 'Transaction not found.' });
-        return;
-      }
-      response.status(200).json({ transaction: fromDb(rows[0]) });
+      response.status(200).json({ transaction: await updateTransaction(lineUserId, id, request.body || {}) });
       return;
     }
 
@@ -157,9 +37,7 @@ export default async function handler(request, response) {
         response.status(400).json({ error: 'Missing transaction id.' });
         return;
       }
-      await supabaseFetch(`${TABLE}?id=eq.${encodeURIComponent(id)}&line_user_id=eq.${encodeURIComponent(lineUserId)}`, {
-        method: 'DELETE',
-      });
+      await deleteTransaction(lineUserId, id);
       response.status(200).json({ ok: true });
       return;
     }

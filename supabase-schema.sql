@@ -35,3 +35,20 @@ create table if not exists public.user_preferences (
 
 alter table public.user_preferences enable row level security;
 revoke all on table public.user_preferences from anon, authenticated;
+
+create table if not exists public.line_pending_transactions (
+  id uuid primary key default gen_random_uuid(),
+  line_user_id text not null,
+  client_id uuid,
+  payload jsonb not null,
+  confidence numeric not null default 0,
+  date_confidence numeric not null default 0,
+  created_at timestamptz not null default now(),
+  expires_at timestamptz not null default now() + interval '1 day'
+);
+
+create index if not exists line_pending_transactions_user_expiry_idx
+  on public.line_pending_transactions (line_user_id, expires_at desc);
+
+alter table public.line_pending_transactions enable row level security;
+revoke all on table public.line_pending_transactions from anon, authenticated;
