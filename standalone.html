@@ -119,6 +119,8 @@
       :root[data-theme="dark"] .field-warning input { border-color: #d8a65d; background: #302719; }
       .field-note { display: none; color: #9a5a00; font-size: .8rem; font-weight: 700; }
       .field-warning .field-note { display: block; }
+      .form-helper { margin: 10px 0 0; color: #5f726e; font-size: .86rem; font-weight: 700; }
+      :root[data-theme="dark"] .form-helper { color: #adc4bd; }
       .form-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 16px; }
       .form-grid > label, input[type="date"] { min-width: 0; max-width: 100%; }
       .row { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 16px; padding: 16px; border-radius: 8px; background: #e8f7ef; }
@@ -354,7 +356,7 @@
       </section>
 
       <section data-panel="capture">
-        <h2>Review transaction</h2>
+        <h2 id="transactionFormTitle">Review transaction</h2>
         <!-- <p>Upload a screenshot to read ราคาที่ได้จริง, จำนวนหุ้น, and มูลค่าหุ้น.</p> -->
         <div class="status" id="ocrStatus" role="status" aria-live="polite"></div>
         <div class="form-grid">
@@ -371,6 +373,7 @@
           <div><span class="muted">Total amount: </span><strong id="draftTotal">฿0.00</strong></div>
           <button class="primary" id="save">Save transaction</button>
         </div>
+        <p class="form-helper" id="bulkDraftHelp" hidden>This updates the selected receipt. Use Save confirmed to save all ready receipts.</p>
       </section>
 
       <section data-panel="records overview">
@@ -462,6 +465,7 @@
       let liffReady = false;
       let liffInitPromise = null;
       let bulkDrafts = [];
+      let selectedBulkDraftId = '';
       let bulkBusy = false;
       const $ = (id) => document.getElementById(id);
       const money = (v, currency = 'THB') => new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number.isFinite(v) ? v : 0);
@@ -935,6 +939,19 @@
         $('stockValue').value = stockValue ? String(Number(stockValue.toFixed(8))) : '';
         $('draftTotal').textContent = money(stockValue + (Number($('fee').value) || 0), $('currency').value);
       }
+      function isBulkDraftMode() {
+        return bulkDrafts.length > 0 && !editingTxId;
+      }
+      function updateCaptureSaveMode() {
+        const bulkMode = isBulkDraftMode();
+        $('transactionFormTitle').textContent = bulkMode ? 'Edit selected receipt' : 'Review transaction';
+        $('bulkDraftHelp').hidden = !bulkMode;
+        if (bulkMode) {
+          $('save').textContent = 'Update receipt draft';
+        } else if (!editingTxId) {
+          $('save').textContent = 'Save transaction';
+        }
+      }
       async function refreshFxRate() {
         try {
           const response = await fetch('/api/fx');
@@ -1164,6 +1181,7 @@
       function loadDraftIntoForm(id) {
         const draft = bulkDrafts.find((item) => item.id === id);
         if (!draft) return;
+        selectedBulkDraftId = id;
         screenshot = draft.image || '';
         $('previewImg').src = screenshot;
         $('preview').style.display = screenshot ? 'block' : 'none';
@@ -1176,11 +1194,16 @@
         $('fee').value = draft.fee || '';
         setDateReviewWarning(!draft.dateReliable);
         updateDraftTotal();
+        updateCaptureSaveMode();
       }
-      function syncCurrentFormToLoadedDraft() {
-        if (!screenshot) return;
-        const draft = bulkDrafts.find((item) => item.image === screenshot);
-        if (!draft) return;
+      function updateSelectedBulkDraft(showMessage = false) {
+        if (!isBulkDraftMode()) return false;
+        const draft = bulkDrafts.find((item) => item.id === selectedBulkDraftId) || bulkDrafts.find((item) => item.image === screenshot);
+        if (!draft) {
+          if (showMessage) setStatus('Tap Edit on a receipt row before updating the draft.');
+          return false;
+        }
+        selectedBulkDraftId = draft.id;
         draft.symbol = $('symbol').value.trim().toUpperCase();
         draft.side = $('side').value;
         draft.currency = $('currency').value;
@@ -1191,9 +1214,19 @@
         draft.fee = Number($('fee').value) || 0;
         draft.dateReliable = validIsoDate(draft.date);
         renderBulkDrafts();
+        if (showMessage) setStatus('Receipt draft updated. Use Save confirmed to save all ready receipts.');
+        return true;
+      }
+      function syncCurrentFormToLoadedDraft() {
+        updateSelectedBulkDraft(false);
       }
       function removeBulkDraft(id) {
+        const removedSelected = selectedBulkDraftId === id;
         bulkDrafts = bulkDrafts.filter((draft) => draft.id !== id);
+        if (removedSelected) {
+          selectedBulkDraftId = bulkDrafts[0]?.id || '';
+          if (selectedBulkDraftId) loadDraftIntoForm(selectedBulkDraftId);
+        }
         renderBulkDrafts();
       }
       window.loadDraftIntoForm = loadDraftIntoForm;
@@ -1202,6 +1235,7 @@
         const validCount = bulkDrafts.filter(draftIsValid).length;
         $('bulkReview').classList.toggle('open', bulkDrafts.length > 0 || bulkBusy);
         $('saveBulk').disabled = bulkBusy || !validCount;
+        updateCaptureSaveMode();
         $('bulkSummary').textContent = bulkBusy
           ? `Reading receipt ${validCount + 1}...`
           : `${validCount} of ${bulkDrafts.length} receipts ready to save. Tap Edit to review a row.`;
@@ -1228,12 +1262,14 @@
         extractionRunId += 1;
         extractionController?.abort();
         extractionController = null;
+        selectedBulkDraftId = '';
         screenshot = '';
         $('file').value = '';
         $('previewImg').src = '';
         $('preview').style.display = 'none';
         setDateReviewWarning(false);
         setStatus('');
+        updateCaptureSaveMode();
       }
       async function readScreenshot(runId = extractionRunId) {
         if (runId !== extractionRunId) return;
@@ -1348,6 +1384,8 @@
         $('price').value = tx.price;
         $('fee').value = tx.fee || '';
         $('save').textContent = 'Update transaction';
+        $('transactionFormTitle').textContent = 'Review transaction';
+        $('bulkDraftHelp').hidden = true;
         updateDraftTotal();
         setTab('capture');
       }
@@ -1389,6 +1427,9 @@
         setStatus('');
         setTab('capture');
         if (files.length === 1) {
+          bulkDrafts = [];
+          selectedBulkDraftId = '';
+          renderBulkDrafts();
           const image = await readFileAsDataUrl(files[0]);
           if (runId !== extractionRunId) return;
           screenshot = image;
@@ -1399,6 +1440,7 @@
         }
         bulkBusy = true;
         bulkDrafts = [];
+        selectedBulkDraftId = '';
         renderBulkDrafts();
         setStatus(`Reading ${files.length} receipts...`, true);
         for (let index = 0; index < files.length; index += 1) {
@@ -1499,6 +1541,10 @@
         showSaveSuccess(draftToTransaction(drafts[0]), { cloudSynced: false });
       });
       $('save').addEventListener('click', async () => {
+        if (isBulkDraftMode()) {
+          updateSelectedBulkDraft(true);
+          return;
+        }
         const tx = {
           id: crypto.randomUUID(),
           symbol: $('symbol').value.trim().toUpperCase(),
