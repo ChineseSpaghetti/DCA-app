@@ -547,8 +547,22 @@
       function cloudUserId() {
         return state.lineProfile?.userId || '';
       }
+      function cloudAccessToken() {
+        try {
+          return window.liff?.getAccessToken?.() || '';
+        } catch {
+          return '';
+        }
+      }
+      function requireCloudAccessToken() {
+        const accessToken = cloudAccessToken();
+        if (!accessToken) {
+          throw new Error('LINE session expired. Tap LINE login again to sync Supabase.');
+        }
+        return accessToken;
+      }
       function cloudHeaders(extra = {}) {
-        const accessToken = window.liff?.getAccessToken?.();
+        const accessToken = cloudAccessToken();
         return accessToken ? { Authorization: `Bearer ${accessToken}`, ...extra } : extra;
       }
       async function ensureLiffReady(liffId = DEFAULT_LIFF_ID) {
@@ -563,6 +577,7 @@
         lastCloudRefreshAt = Date.now();
         setLineStatus('Loading cloud transactions...');
         try {
+          requireCloudAccessToken();
           if (state.cloudOwnerId && state.cloudOwnerId !== lineUserId) {
             state.txs = [];
           }
@@ -597,7 +612,8 @@
       }
       async function saveCloudTransaction(tx) {
         const lineUserId = cloudUserId();
-        if (!lineUserId) return null;
+        if (!lineUserId) throw new Error('Login with LINE to sync Supabase.');
+        requireCloudAccessToken();
         const response = await fetch('/api/transactions', {
           method: 'POST',
           headers: cloudHeaders({ 'Content-Type': 'application/json' }),
@@ -610,7 +626,8 @@
       }
       async function updateCloudTransaction(tx) {
         const lineUserId = cloudUserId();
-        if (!lineUserId) return null;
+        if (!lineUserId) throw new Error('Login with LINE to sync Supabase.');
+        requireCloudAccessToken();
         const response = await fetch(`/api/transactions?id=${encodeURIComponent(tx.id)}`, {
           method: 'PUT',
           headers: cloudHeaders({ 'Content-Type': 'application/json' }),
@@ -623,7 +640,8 @@
       }
       async function deleteCloudTransaction(id) {
         const lineUserId = cloudUserId();
-        if (!lineUserId) return false;
+        if (!lineUserId) throw new Error('Login with LINE to sync Supabase.');
+        requireCloudAccessToken();
         const response = await fetch(`/api/transactions?id=${encodeURIComponent(id)}`, {
           method: 'DELETE',
           headers: cloudHeaders()
