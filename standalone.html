@@ -142,6 +142,21 @@
       .quote-note { color: #667875; font-size: .82rem; }
       :root[data-theme="dark"] .quote-note { color: #a7bbb5; }
       .growth-head { display: flex; align-items: start; justify-content: space-between; gap: 12px; }
+      .growth-controls { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+      .tf-menu { position: relative; }
+      .tf-trigger { min-width: 72px; min-height: 40px; border: 1px solid #b9d7ca; border-radius: 999px; color: #005f40; background: #eef8f4; padding: 8px 14px; font-weight: 900; }
+      .tf-trigger:hover { border-color: #78b99c; background: #e3f4ec; }
+      .tf-options { position: absolute; top: calc(100% + 8px); right: 0; z-index: 10; min-width: 92px; display: none; padding: 6px; border: 1px solid #d7e4df; border-radius: 12px; background: #fff; box-shadow: 0 12px 24px rgba(0, 54, 39, .14); }
+      .tf-menu.open .tf-options { display: grid; gap: 3px; }
+      .tf-options button { min-height: 36px; border: 0; border-radius: 8px; padding: 7px 10px; color: #405351; background: transparent; font-weight: 850; text-align: left; }
+      .tf-options button:hover { color: #005f40; background: #eef8f4; }
+      .tf-options button.active { color: #005f40; background: #dff1e8; }
+      :root[data-theme="dark"] .tf-trigger { border-color: #42685d; color: #b6f2d0; background: #14352d; }
+      :root[data-theme="dark"] .tf-trigger:hover { border-color: #5a917d; background: #17352d; }
+      :root[data-theme="dark"] .tf-options { border-color: #25483f; background: #10221e; box-shadow: 0 12px 24px rgba(0, 0, 0, .28); }
+      :root[data-theme="dark"] .tf-options button { color: #b9cbc6; }
+      :root[data-theme="dark"] .tf-options button:hover { color: #b6f2d0; background: #17352d; }
+      :root[data-theme="dark"] .tf-options button.active { color: #9ce7bf; background: #14352d; }
       .growth-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
       .growth-stat { padding: 10px 11px; border-radius: 8px; background: #f0f7f4; }
       :root[data-theme="dark"] .growth-stat { background: #0d1d1a; }
@@ -155,8 +170,19 @@
       .growth-value { fill: none; stroke: #00854d; stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; }
       .growth-fill { fill: rgba(0, 133, 77, .1); stroke: none; }
       :root[data-theme="dark"] .growth-fill { fill: rgba(132, 225, 176, .12); }
-      .growth-dot { fill: #00854d; stroke: white; stroke-width: 2; }
+      .growth-hit { fill: transparent; cursor: pointer; }
+      .growth-dot { fill: #00854d; stroke: white; stroke-width: 2; pointer-events: none; }
+      .growth-dot.selected { fill: #005f40; stroke-width: 3; }
       :root[data-theme="dark"] .growth-dot { stroke: #10221e; }
+      .growth-tooltip { filter: drop-shadow(0 8px 14px rgba(0, 54, 39, .16)); pointer-events: none; }
+      .growth-tooltip-card { fill: white; stroke: #d7e4df; stroke-width: 1; }
+      :root[data-theme="dark"] .growth-tooltip-card { fill: #10221e; stroke: #25483f; }
+      .growth-tooltip-title { fill: #102626; font-size: 13px; font-weight: 900; }
+      .growth-tooltip-text { fill: #667875; font-size: 12px; font-weight: 700; }
+      .growth-tooltip-gain { fill: #00854d; font-size: 12px; font-weight: 900; }
+      .growth-tooltip-loss { fill: #d72828; font-size: 12px; font-weight: 900; }
+      :root[data-theme="dark"] .growth-tooltip-title { fill: #edf7f3; }
+      :root[data-theme="dark"] .growth-tooltip-text { fill: #a7bbb5; }
       .growth-label { fill: #667875; font-size: 12px; font-weight: 700; }
       :root[data-theme="dark"] .growth-label { fill: #a7bbb5; }
       .growth-empty { padding: 28px 0 10px; color: #667875; text-align: center; }
@@ -242,6 +268,9 @@
         .form-grid, .capture-actions { grid-template-columns: 1fr; }
         .form-grid > label, .form-grid input, .form-grid select { min-width: 0; width: 100%; max-width: 100%; }
         .growth-head { display: grid; }
+        .growth-controls { align-items: stretch; }
+        .tf-menu { justify-self: start; }
+        .tf-options { right: auto; left: 0; }
         .growth-stats { grid-template-columns: 1fr; }
         .bulk-card { grid-template-columns: 1fr; }
         .bulk-actions { justify-content: flex-end; }
@@ -320,11 +349,23 @@
         <div class="growth-head">
           <div>
             <h2>Capital vs value</h2>
-            <p>Pure capital compared with capital plus current P/L.</p>
+            <p>Tap a month to inspect your DCA progress.</p>
           </div>
-          <div class="legend" aria-label="Chart legend">
-            <span><i class="capital-key"></i>Pure capital</span>
-            <span><i></i>Capital + P/L</span>
+          <div class="growth-controls">
+            <div class="tf-menu" id="timeframeMenu">
+              <button class="tf-trigger" id="timeframeTrigger" type="button" aria-haspopup="true" aria-expanded="false">1Y &#9662;</button>
+              <div class="tf-options" id="timeframeOptions" role="menu" aria-label="Choose chart timeframe">
+                <button type="button" data-timeframe="3M" role="menuitem">3M</button>
+                <button type="button" data-timeframe="6M" role="menuitem">6M</button>
+                <button type="button" data-timeframe="1Y" role="menuitem">1Y</button>
+                <button type="button" data-timeframe="3Y" role="menuitem">3Y</button>
+                <button type="button" data-timeframe="5Y" role="menuitem">5Y</button>
+              </div>
+            </div>
+            <div class="legend" aria-label="Chart legend">
+              <span><i class="capital-key"></i>Pure capital</span>
+              <span><i></i>Capital + P/L</span>
+            </div>
           </div>
         </div>
         <div class="growth-stats">
@@ -435,6 +476,8 @@
         },
         displayCurrency: 'THB',
         profitView: 'unrealized',
+        chartTimeframe: '1Y',
+        chartSelectedMonth: '',
         fx: { base: 'USD', quote: 'THB', rate: 35, date: '', source: 'Fallback' },
         quoteMeta: { source: 'Seed', updatedAt: '' },
         theme: 'light',
@@ -445,6 +488,8 @@
       let state = JSON.parse(localStorage.getItem(key) || 'null') || seed;
       state.displayCurrency ||= 'THB';
       state.profitView = state.profitView === 'realized' ? 'realized' : 'unrealized';
+      state.chartTimeframe = ['3M', '6M', '1Y', '3Y', '5Y'].includes(state.chartTimeframe) ? state.chartTimeframe : '1Y';
+      state.chartSelectedMonth ||= '';
       state.fx ||= seed.fx;
       state.prices ||= {};
       state.quoteMeta ||= { source: 'Saved', updatedAt: '' };
@@ -471,7 +516,7 @@
       const $ = (id) => document.getElementById(id);
       const money = (v, currency = 'THB') => new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number.isFinite(v) ? v : 0);
       const num = (v) => new Intl.NumberFormat('en-US', { maximumFractionDigits: 4 }).format(Number.isFinite(v) ? v : 0);
-      const attr = (value) => String(value ?? '').replace(/[&"<]/g, (char) => ({ '&': '&amp;', '"': '&quot;', '<': '&lt;' }[char]));
+      const attr = (value) => String(value ?? '').replace(/[&"'<>]/g, (char) => ({ '&': '&amp;', '"': '&quot;', "'": '&#39;', '<': '&lt;', '>': '&gt;' }[char]));
       $('date').value = new Date().toISOString().slice(0, 10);
       $('displayCurrency').value = state.displayCurrency;
       $('profitView').value = state.profitView;
@@ -778,6 +823,24 @@
         const date = new Date(Number(year), Number(month) - 1, 1);
         return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('en-US', { month: 'short' });
       }
+      function monthLongLabel(value) {
+        const [year, month] = String(value || '').split('-');
+        const date = new Date(Number(year), Number(month) - 1, 1);
+        return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      }
+      function addMonths(monthValue, offset) {
+        const [year, month] = String(monthValue || '').split('-').map(Number);
+        const date = new Date(year, month - 1 + offset, 1);
+        return Number.isNaN(date.getTime()) ? '' : `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      }
+      function visibleGrowthPoints(points) {
+        if (!points.length) return [];
+        const timeframeMonths = { '3M': 3, '6M': 6, '1Y': 12, '3Y': 36, '5Y': 60 };
+        const monthCount = timeframeMonths[state.chartTimeframe] || 12;
+        const latestMonth = points[points.length - 1].month;
+        const firstMonth = addMonths(latestMonth, -(monthCount - 1));
+        return points.filter((point) => point.month >= firstMonth);
+      }
       function portfolioSnapshotRows(map) {
         return [...map.values()].map((row) => {
           const quote = priceQuote(row.symbol, row.currency);
@@ -828,14 +891,30 @@
       function chartPath(points, chartHeight) {
         return points.map((point, index) => `${index ? 'L' : 'M'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(' ');
       }
-      function renderGrowthChart(displayCurrency) {
-        const points = growthSeries(displayCurrency);
-        const latest = points[points.length - 1] || { capital: 0, value: 0 };
-        const gain = latest.value - latest.capital;
-        $('chartCapital').textContent = money(latest.capital, displayCurrency);
-        $('chartValue').textContent = money(latest.value, displayCurrency);
-        $('chartReturn').textContent = `${latest.capital ? ((gain / latest.capital) * 100).toFixed(2) : '0.00'}%`;
+      function updateChartStats(point, displayCurrency) {
+        const gain = point.value - point.capital;
+        $('chartCapital').textContent = money(point.capital, displayCurrency);
+        $('chartValue').textContent = money(point.value, displayCurrency);
+        $('chartReturn').textContent = `${point.capital ? ((gain / point.capital) * 100).toFixed(2) : '0.00'}%`;
         $('chartReturn').className = gain >= 0 ? 'positive' : 'negative';
+      }
+      function renderTimeframeControl() {
+        const value = state.chartTimeframe || '1Y';
+        $('timeframeTrigger').textContent = `${value} \u25be`;
+        document.querySelectorAll('[data-timeframe]').forEach((button) => {
+          const isActive = button.dataset.timeframe === value;
+          button.classList.toggle('active', isActive);
+          button.textContent = `${button.dataset.timeframe}${isActive ? ' \u2713' : ''}`;
+        });
+      }
+      function renderGrowthChart(displayCurrency) {
+        renderTimeframeControl();
+        const allPoints = growthSeries(displayCurrency);
+        const points = visibleGrowthPoints(allPoints);
+        const latest = points[points.length - 1] || { capital: 0, value: 0, month: '' };
+        const selected = points.find((point) => point.month === state.chartSelectedMonth) || latest;
+        state.chartSelectedMonth = selected.month || '';
+        updateChartStats(selected, displayCurrency);
         if (points.length < 2) {
           $('growthChartWrap').innerHTML = `
             <div class="growth-empty">
@@ -860,7 +939,13 @@
         const capitalLine = chartPath(chartPoints.map((point) => ({ x: point.x, y: point.capitalY })));
         const valueLine = chartPath(chartPoints.map((point) => ({ x: point.x, y: point.valueY })));
         const fillPath = `${valueLine} L ${chartPoints[chartPoints.length - 1].x.toFixed(1)} ${height - pad.bottom} L ${chartPoints[0].x.toFixed(1)} ${height - pad.bottom} Z`;
-        const finalPoint = chartPoints[chartPoints.length - 1];
+        const selectedPoint = chartPoints.find((point) => point.month === state.chartSelectedMonth) || chartPoints[chartPoints.length - 1];
+        const selectedGain = selectedPoint.value - selectedPoint.capital;
+        const selectedPct = selectedPoint.capital ? (selectedGain / selectedPoint.capital) * 100 : 0;
+        const tooltipWidth = 172;
+        const tooltipHeight = 78;
+        const tooltipX = Math.min(Math.max(selectedPoint.x - tooltipWidth / 2, pad.left), width - pad.right - tooltipWidth);
+        const tooltipY = Math.max(8, selectedPoint.valueY - tooltipHeight - 14);
         $('growthChartWrap').innerHTML = `
           <svg class="growth-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Capital versus value chart">
             <line class="growth-grid" x1="${pad.left}" y1="${pad.top}" x2="${width - pad.right}" y2="${pad.top}"></line>
@@ -869,9 +954,15 @@
             <path class="growth-fill" d="${fillPath}"></path>
             <path class="growth-capital" d="${capitalLine}"></path>
             <path class="growth-value" d="${valueLine}"></path>
-            <circle class="growth-dot" cx="${finalPoint.x.toFixed(1)}" cy="${finalPoint.valueY.toFixed(1)}" r="5"></circle>
+            ${chartPoints.map((point) => `<circle class="growth-dot${point.month === state.chartSelectedMonth ? ' selected' : ''}" cx="${point.x.toFixed(1)}" cy="${point.valueY.toFixed(1)}" r="${point.month === state.chartSelectedMonth ? '7' : '4.5'}"></circle><circle class="growth-hit" data-chart-month="${attr(point.month)}" cx="${point.x.toFixed(1)}" cy="${point.valueY.toFixed(1)}" r="16"><title>${attr(monthLongLabel(point.month))}: ${attr(money(point.value, displayCurrency))}</title></circle>`).join('')}
             ${chartPoints.map((point) => `<text class="growth-label" x="${point.x.toFixed(1)}" y="${height - 8}" text-anchor="middle">${point.label}</text>`).join('')}
-            <text class="growth-label" x="${Math.max(pad.left + 42, finalPoint.x - 46).toFixed(1)}" y="${Math.max(14, finalPoint.valueY - 12).toFixed(1)}">${gain >= 0 ? '+' : ''}${money(gain, displayCurrency)}</text>
+            <g class="growth-tooltip" transform="translate(${tooltipX.toFixed(1)} ${tooltipY.toFixed(1)})">
+              <rect class="growth-tooltip-card" width="${tooltipWidth}" height="${tooltipHeight}" rx="10"></rect>
+              <text class="growth-tooltip-title" x="12" y="20">${attr(monthLongLabel(selectedPoint.month))}</text>
+              <text class="growth-tooltip-text" x="12" y="39">Capital ${attr(money(selectedPoint.capital, displayCurrency))}</text>
+              <text class="growth-tooltip-text" x="12" y="56">Value ${attr(money(selectedPoint.value, displayCurrency))}</text>
+              <text class="${selectedGain >= 0 ? 'growth-tooltip-gain' : 'growth-tooltip-loss'}" x="12" y="72">${selectedGain >= 0 ? '+' : ''}${selectedPct.toFixed(2)}%</text>
+            </g>
           </svg>`;
       }
       function render() {
@@ -1511,6 +1602,10 @@
       });
       document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape' && !$('successPopup').hidden) hideSaveSuccess();
+        if (event.key === 'Escape') {
+          $('timeframeMenu').classList.remove('open');
+          $('timeframeTrigger').setAttribute('aria-expanded', 'false');
+        }
       });
       $('accountButton').addEventListener('click', () => {
         $('accountPopover').classList.toggle('open');
@@ -1518,6 +1613,10 @@
       document.addEventListener('click', (event) => {
         if (!event.target.closest('.account-menu')) {
           $('accountPopover').classList.remove('open');
+        }
+        if (!event.target.closest('#timeframeMenu')) {
+          $('timeframeMenu').classList.remove('open');
+          $('timeframeTrigger').setAttribute('aria-expanded', 'false');
         }
       });
       ['shares', 'price', 'fee'].forEach((id) => $(id).addEventListener('input', () => {
@@ -1529,6 +1628,29 @@
       $('currency').addEventListener('change', updateDraftTotal);
       $('displayCurrency').addEventListener('change', () => {
         state.displayCurrency = $('displayCurrency').value;
+        saveState();
+        render();
+      });
+      $('timeframeTrigger').addEventListener('click', () => {
+        const menu = $('timeframeMenu');
+        const open = !menu.classList.contains('open');
+        menu.classList.toggle('open', open);
+        $('timeframeTrigger').setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+      $('timeframeOptions').addEventListener('click', (event) => {
+        const button = event.target.closest('[data-timeframe]');
+        if (!button) return;
+        state.chartTimeframe = button.dataset.timeframe;
+        state.chartSelectedMonth = '';
+        $('timeframeMenu').classList.remove('open');
+        $('timeframeTrigger').setAttribute('aria-expanded', 'false');
+        saveState();
+        render();
+      });
+      $('growthChartWrap').addEventListener('click', (event) => {
+        const point = event.target.closest('[data-chart-month]');
+        if (!point) return;
+        state.chartSelectedMonth = point.dataset.chartMonth;
         saveState();
         render();
       });
