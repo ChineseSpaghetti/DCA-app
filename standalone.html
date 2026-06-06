@@ -92,20 +92,22 @@
       :root[data-theme="dark"] .summary { border-color: #25483f; background: var(--card); }
       .summary .big { display: block; margin: 8px 0 3px; color: #004d35; font-size: clamp(2.35rem, 6vw, 3.45rem); line-height: .98; font-weight: 950; letter-spacing: -.065em; }
       :root[data-theme="dark"] .summary .big { color: #9ce7bf; }
-      .summary-top { display: flex; align-items: start; justify-content: space-between; gap: 14px; }
-      .summary-top > div { min-width: 0; }
-      .summary-top span, .summary-grid span { color: #667875; }
-      :root[data-theme="dark"] .summary-top span, :root[data-theme="dark"] .summary-grid span { color: #a7bbb5; }
-      .summary-top label { width: 124px; color: var(--muted); font-size: .88rem; }
-      .summary-top select { min-height: 50px; border-radius: 12px; padding: 10px 14px; font-weight: 800; }
+      .summary-dashboard { position: relative; display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) minmax(0, 1fr); gap: 0; padding: 0; }
+      .summary-metric { min-width: 0; padding: 28px 30px; border-left: 1px solid #dfe8e5; }
+      .summary-metric:first-child { border-left: 0; }
+      .summary-metric span { display: block; color: #667875; font-size: .94rem; }
+      .summary-metric strong { display: block; margin-top: 7px; font-size: clamp(1.55rem, 4vw, 2rem); color: #007044; letter-spacing: -.04em; }
+      .summary-metric:first-child strong { font-size: clamp(2rem, 5vw, 2.7rem); color: #004d35; }
+      .summary-metric small { display: block; margin-top: 8px; color: #405351; font-size: .94rem; }
+      .summary-metric small.positive, .summary-metric small.negative { font-weight: 850; }
+      :root[data-theme="dark"] .summary-metric { border-color: #25483f; }
+      :root[data-theme="dark"] .summary-metric span { color: #a7bbb5; }
+      :root[data-theme="dark"] .summary-metric small { color: #d7e9e3; }
+      :root[data-theme="dark"] .summary-metric:first-child strong { color: #9ce7bf; }
+      .currency-control { position: absolute; right: 22px; top: 18px; width: 118px; color: var(--muted); font-size: .82rem; }
+      .currency-control select { min-height: 44px; border-radius: 14px; padding: 9px 34px 9px 13px; font-weight: 850; }
       .fx-note { display: block; margin-top: 8px; color: #667875; font-size: .82rem; }
       :root[data-theme="dark"] .fx-note { color: #a7bbb5; }
-      .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; border-top: 1px solid #e3ebe8; margin-top: 20px; padding-top: 18px; }
-      .summary-grid > div { padding: 0 16px; border-left: 1px solid #e3ebe8; }
-      .summary-grid > div:first-child { padding-left: 0; border-left: 0; }
-      :root[data-theme="dark"] .summary-grid { border-color: #25483f; }
-      .summary-grid span { display: block; margin-bottom: 4px; font-size: .78rem; }
-      .summary-grid strong { font-size: 1.05rem; }
       .tabs { display: grid; grid-template-columns: repeat(3, 1fr); margin: 22px 0 16px; border: 1px solid #dbe5e1; border-radius: 16px; background: rgba(255,255,255,.86); overflow: hidden; box-shadow: 0 10px 28px rgba(0, 54, 39, .06); }
       :root[data-theme="dark"] .tabs { border-color: #25483f; background: #10221e; }
       .tabs button { min-height: 64px; border: 0; background: transparent; color: #405351; font-weight: 900; font-size: 1.02rem; }
@@ -173,9 +175,20 @@
       .secondary:hover { border-color: #6aa98e; background: #eef8f4; color: #005f40; }
       :root[data-theme="dark"] .secondary:hover, :root[data-theme="dark"] .capture-actions button:hover { border-color: #5a917d; background: #17352d; color: #b6f2d0; }
       .secondary:active { background: #dff1e8; }
-      .records-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-      .portfolio-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 14px; }
-      .portfolio-actions select { width: auto; min-height: 44px; padding: 9px 34px 9px 12px; border-radius: 999px; color: #005f40; background: #eef8f4; font-weight: 900; }
+      .records-head, .section-title-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+      .portfolio-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; margin-top: 22px; }
+      .portfolio-actions select { width: 100%; min-height: 50px; padding: 10px 34px 10px 12px; border-radius: 14px; color: #005f40; background: #eef8f4; font-weight: 950; text-align: center; }
+      .profit-toggle { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 4px; border: 1px solid #d5dfdc; border-radius: 15px; background: rgba(255,255,255,.74); }
+      .profit-toggle button { min-height: 44px; border: 0; border-radius: 12px; background: transparent; color: #405351; font-weight: 950; }
+      .profit-toggle button.active { color: white; background: linear-gradient(135deg, #006b49, #00854d); box-shadow: inset 0 0 0 1px rgba(255,255,255,.16), 0 10px 18px rgba(0, 95, 64, .18); }
+      :root[data-theme="dark"] .profit-toggle { border-color: #25483f; background: #0d1d1a; }
+      :root[data-theme="dark"] .profit-toggle button { color: #b9cbc6; }
+      :root[data-theme="dark"] .profit-toggle button.active { color: #ecfff5; }
+      .portfolio-actions select.sr-select { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+      .tx-filter-actions { display: flex; align-items: center; gap: 10px; }
+      .icon-soft { width: 46px; height: 46px; display: grid; place-items: center; border: 1px solid #d6e3df; border-radius: 14px; color: #005f40; background: #fbfdfc; }
+      .icon-soft svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; }
+      .filter-pill { min-height: 46px; border-radius: 14px; padding: 10px 16px; }
       .quote-note { color: #667875; font-size: .82rem; }
       :root[data-theme="dark"] .quote-note { color: #a7bbb5; }
       .quick-card { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; align-items: center; gap: 13px; margin-top: 16px; padding: 14px; border: 1px solid #d8e7e0; border-radius: 16px; background: linear-gradient(135deg, #f7fbf9, #e8f7ef); }
@@ -260,35 +273,52 @@
       @keyframes ai-status-sheen { 0%, 20% { transform: translateX(-100%); } 80%, 100% { transform: translateX(100%); } }
       @keyframes ai-orb-pulse { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 6px rgba(0,133,77,.09); } 50% { transform: scale(1.06); box-shadow: 0 0 0 10px rgba(0,133,77,.04); } }
       @keyframes ai-dot { 0%, 100% { transform: translateY(0); opacity: .35; } 50% { transform: translateY(-3px); opacity: 1; } }
-      .holdings, .transactions { display: grid; gap: 10px; margin-top: 14px; }
-      .holding { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; padding: 14px; border: 1px solid #e5ece9; border-radius: 15px; background: #fbfdfc; }
-      :root[data-theme="dark"] .holding { border-color: #25483f; background: #0d1d1a; }
+      .holdings, .transactions { display: grid; margin-top: 14px; border: 1px solid #e5ece9; border-radius: 16px; background: rgba(255,255,255,.72); overflow: hidden; }
+      :root[data-theme="dark"] .holdings, :root[data-theme="dark"] .transactions { border-color: #25483f; background: #0d1d1a; }
+      .holding { display: grid; grid-template-columns: minmax(180px, 1.1fr) 104px minmax(250px, 1fr) minmax(150px, .85fr); align-items: center; gap: 16px; min-height: 104px; padding: 16px 18px; border-top: 1px solid #e5ece9; background: rgba(255,255,255,.64); }
       .holding:first-child, .swipe-row:first-child { border-top: 0; }
+      :root[data-theme="dark"] .holding { border-color: #25483f; background: #10221e; }
       .empty-state { padding: 22px 4px 8px; color: #667875; text-align: center; }
       .empty-state strong { display: block; margin-bottom: 5px; color: #15302e; }
       :root[data-theme="dark"] .empty-state, :root[data-theme="dark"] .empty-state strong { color: #b9cbc6; }
-      .swipe-row { position: relative; min-height: 78px; overflow: hidden; border: 1px solid #e5ece9; border-radius: 15px; background: #f3f7f5; touch-action: pan-y; }
+      .swipe-row { position: relative; min-height: 78px; overflow: hidden; border-top: 1px solid #e5ece9; background: #f7fbf9; touch-action: pan-y; }
       :root[data-theme="dark"] .swipe-row { border-color: #25483f; background: #0d1d1a; }
       .swipe-actions { position: absolute; inset: 0; display: flex; justify-content: space-between; }
       .swipe-action { width: 72px; border: 0; color: white; display: grid; place-items: center; }
       .swipe-action svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; }
       .swipe-delete { background: #d83232; }
       .swipe-edit { background: #087b55; }
-      .tx { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 10px; min-height: 78px; padding: 13px 8px 13px 14px; background: #fff; transition: transform .18s ease; will-change: transform; }
+      .tx { position: relative; z-index: 1; display: grid; grid-template-columns: 92px minmax(120px, 1fr) minmax(130px, 1fr) minmax(130px, 1fr) auto; align-items: center; gap: 14px; min-height: 78px; padding: 14px 12px 14px 14px; background: rgba(255,255,255,.9); transition: transform .18s ease; will-change: transform; }
       :root[data-theme="dark"] .tx { background: #10221e; }
       .tx > div { min-width: 0; }
       .tx .muted { overflow-wrap: anywhere; }
       .holding strong, .tx strong { display: block; }
       .holding > div:last-child span { display: block; white-space: nowrap; }
+      .holding-name { display: grid; grid-template-columns: 58px minmax(0, 1fr); align-items: center; gap: 14px; }
+      .holding-logo { width: 58px; height: 58px; display: grid; place-items: center; overflow: hidden; border-radius: 50%; color: white; background: linear-gradient(135deg, #07335f, #0d1140); font-size: .72rem; font-weight: 950; text-align: center; box-shadow: inset 0 0 0 1px rgba(255,255,255,.18), 0 8px 18px rgba(0, 54, 39, .1); }
+      .holding-logo.logo-scb { background: linear-gradient(135deg, #4e148c, #2b0f61); color: #f5d048; font-size: .82rem; }
+      .holding-logo.logo-euv { background: linear-gradient(135deg, #0176c7, #004f9f); }
+      .holding-logo.logo-ceg { background: linear-gradient(135deg, #008a74, #005348); }
+      .holding-allocation { display: grid; grid-template-columns: auto 38px; align-items: center; justify-content: start; gap: 10px; color: #007044; font-weight: 950; }
+      .allocation-ring { --p: 0; width: 38px; height: 38px; display: block; border-radius: 50%; background: conic-gradient(#00854d calc(var(--p) * 1%), #e1e9e6 0); position: relative; }
+      .allocation-ring::after { content: ""; position: absolute; inset: 7px; border-radius: inherit; background: #fbfdfc; }
+      :root[data-theme="dark"] .allocation-ring::after { background: #10221e; }
+      .holding-details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px 18px; color: #526561; font-size: .92rem; }
+      .holding-details strong { color: var(--ink); font-size: 1.02rem; }
       .holding-meta { margin-top: 4px; color: var(--muted); font-size: .9rem; }
-      .holding-value { text-align: right; }
-      .holding-profit { grid-column: 1 / -1; display: flex; justify-content: space-between; gap: 10px; padding-top: 10px; border-top: 1px solid #edf2f0; font-weight: 850; }
-      :root[data-theme="dark"] .holding-profit { border-color: #25483f; }
+      .holding-profit { display: grid; justify-items: end; gap: 6px; text-align: right; font-weight: 900; }
+      .sparkline { width: 90px; height: 26px; }
+      .sparkline path { fill: none; stroke: #00854d; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+      .sparkline.down path { stroke: #d72828; }
       .allocation { color: #52706a; font-size: .82rem; font-weight: 800; white-space: nowrap; }
       :root[data-theme="dark"] .allocation { color: #a7bbb5; }
-      .tx-actions { display: flex; gap: 2px; }
-      .tx-menu-action { width: 38px; height: 38px; display: grid; place-items: center; border: 0; border-radius: 8px; color: #52706a; background: transparent; }
+      .tx-badge { width: fit-content; min-width: 62px; display: inline-grid; place-items: center; padding: 9px 12px; border-radius: 13px; color: #007044; background: #e9f5ef; font-weight: 950; }
+      .tx-badge.sell { color: #d72828; background: #fff0f0; }
+      .tx span { display: block; margin-top: 4px; color: var(--muted); font-size: .9rem; }
+      .tx-actions { display: flex; gap: 10px; }
+      .tx-menu-action { width: 46px; height: 46px; display: grid; place-items: center; border: 1px solid #d9e7e2; border-radius: 13px; color: #006b49; background: #eef8f4; }
       .tx-menu-action:hover { color: #005f40; background: #eef8f4; }
+      .tx-menu-action.delete { color: #d72828; background: #fff4f4; border-color: #f0d0d0; }
       .tx-menu-action.delete:hover { color: #b31e1e; background: #fff0f0; }
       .tx-menu-action svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; }
       .positive { color: #00854d; }
@@ -331,12 +361,12 @@
         header p { font-size: .8rem; }
         .summary, section { padding: 20px; border-radius: 18px; }
         .summary .big { font-size: 2.55rem; }
-        .summary-top { gap: 14px; }
-        .summary-top label { width: 102px; min-width: 0; }
-        .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 0; }
-        .summary-grid > div { padding: 0 12px; }
-        .summary-grid > div:nth-child(odd) { padding-left: 0; border-left: 0; }
-        .summary-grid > div:nth-child(even) { padding-right: 0; }
+        .summary-dashboard { grid-template-columns: 1fr; padding: 0; }
+        .summary-metric { padding: 18px 20px; border-left: 0; border-top: 1px solid #dfe8e5; }
+        .summary-metric:first-child { padding-top: 22px; border-top: 0; }
+        .summary-metric span { padding-right: 116px; }
+        .summary-metric:first-child strong { padding-right: 116px; }
+        .currency-control { right: 18px; top: 18px; width: 104px; }
         .tabs { display: none; }
         .form-grid, .capture-actions { grid-template-columns: 1fr; }
         .form-grid > label, .form-grid input, .form-grid select { min-width: 0; width: 100%; max-width: 100%; }
@@ -349,15 +379,19 @@
         .quick-card .secondary { grid-column: 1 / -1; }
         .bulk-card { grid-template-columns: 1fr; }
         .bulk-actions { justify-content: flex-end; }
-        .holding { grid-template-columns: 1fr; }
-        .records-head { flex-direction: column; }
+        .holding { grid-template-columns: 1fr; align-items: start; gap: 12px; padding: 15px; }
+        .holding-details { grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
+        .holding-profit { justify-items: start; text-align: left; }
+        .records-head, .section-title-row { align-items: flex-start; }
         .account-popover { right: 0; width: min(200px, calc(100vw - 32px)); }
         .row { align-items: stretch; flex-direction: column; }
-        .portfolio-actions { display: grid; grid-template-columns: 1fr auto; }
+        .portfolio-actions { grid-template-columns: 1fr; }
+        .profit-toggle { grid-column: 1 / -1; }
         .portfolio-actions select { width: 100%; }
         .quote-note { grid-column: 1 / -1; }
-        .tx { grid-template-columns: minmax(0, 1fr) auto; }
-        .tx-actions { grid-column: 1 / -1; justify-content: flex-end; border-top: 1px solid #edf2f0; padding-top: 4px; }
+        .tx { grid-template-columns: 70px minmax(0, 1fr) auto; gap: 10px; }
+        .tx > div:nth-of-type(1), .tx > div:nth-of-type(2), .tx > div:nth-of-type(3) { grid-column: 2 / 3; }
+        .tx-actions { grid-column: 3 / 4; grid-row: 1 / 4; justify-content: flex-end; align-self: center; flex-direction: column; }
         .bottom { display: grid; }
       }
       @media (prefers-reduced-motion: reduce) {
@@ -372,7 +406,7 @@
         <button class="icon-btn theme-toggle" id="themeToggle" aria-label="Switch to dark mode">&#9790;</button>
         <div>
           <h1>DCA Ledger</h1>
-          <p>บันทึก DCA ของคุณง่าย ๆ</p>
+          <p>พอร์ตและประวัติรายการ</p>
         </div>
         <div class="account-menu">
           <button class="account-btn" id="accountButton" aria-label="Open account menu">
@@ -393,25 +427,29 @@
         </div>
       </header>
 
-      <div class="summary">
-        <div class="summary-top">
-          <div>
-            <span>มูลค่าพอร์ตทั้งหมด</span>
-            <strong class="big" id="portfolioValue">฿0.00</strong>
-            <small id="costBase">Cost basis ฿0.00</small>
-            <small class="fx-note" id="fxNote">FX rate loading...</small>
-          </div>
-          <label>
-            สกุลเงิน
-            <select id="displayCurrency"><option value="THB">THB</option><option value="USD">USD</option></select>
-          </label>
+      <div class="summary summary-dashboard">
+        <div class="summary-metric">
+          <span>มูลค่าพอร์ตทั้งหมด</span>
+          <strong id="portfolioValue">฿0.00</strong>
+          <small id="costBase">ต้นทุนรวม ฿0.00</small>
+          <small class="fx-note" id="fxNote">FX rate loading...</small>
         </div>
-        <div class="summary-grid">
-          <div><span>ต้นทุนรวม</span><strong id="totalCost">฿0.00</strong></div>
-          <div><span>มูลค่าปัจจุบัน</span><strong id="currentValue">฿0.00</strong></div>
-          <div><span>กำไร/ขาดทุนยังไม่รับรู้</span><strong id="profit">฿0.00</strong></div>
-          <div><span>กำไร/ขาดทุนรับรู้แล้ว</span><strong id="realizedProfit">฿0.00</strong></div>
+        <div class="summary-metric">
+          <span>กำไร/ขาดทุนยังไม่รับรู้</span>
+          <strong id="profit">฿0.00</strong>
+          <small id="profitPct" class="positive">(+0.00%)</small>
         </div>
+        <div class="summary-metric">
+          <span>กำไร/ขาดทุนรับรู้แล้ว</span>
+          <strong id="realizedProfit">฿0.00</strong>
+          <small id="realizedProfitPct" class="positive">(+0.00%)</small>
+        </div>
+        <span id="totalCost" hidden>฿0.00</span>
+        <span id="currentValue" hidden>฿0.00</span>
+        <label class="currency-control">
+          สกุลเงิน
+          <select id="displayCurrency"><option value="THB">THB</option><option value="USD">USD</option></select>
+        </label>
       </div>
 
       <nav class="tabs">
@@ -523,20 +561,32 @@
       <section data-panel="records overview">
         <div class="records-head">
           <h2>Investment portfolio</h2>
+          <button class="secondary" id="refreshPrices">↻ รีเฟรชราคา</button>
         </div>
         <div class="portfolio-actions">
-          <select id="profitView" aria-label="Portfolio profit view">
+          <div class="profit-toggle" aria-label="Portfolio profit view">
+            <button class="active" type="button" data-profit-view="unrealized">Unrealized</button>
+            <button type="button" data-profit-view="realized">Realized</button>
+          </div>
+          <select class="sr-select" id="profitView" aria-label="Portfolio profit view">
             <option value="unrealized">Unrealized P/L</option>
             <option value="realized">Realized P/L</option>
           </select>
-          <button class="secondary" id="refreshPrices">Refresh prices</button>
           <small class="quote-note" id="quoteNote">Using saved prices</small>
         </div>
         <div class="holdings" id="holdings"></div>
       </section>
 
       <section data-panel="records">
-        <h2>Transactions</h2>
+        <div class="section-title-row">
+          <h2>Transactions</h2>
+          <div class="tx-filter-actions">
+            <button class="icon-soft" type="button" aria-label="Search transactions">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m16.5 16.5 4 4"></path></svg>
+            </button>
+            <button class="secondary filter-pill" type="button">All ▾</button>
+          </div>
+        </div>
         <div class="transactions" id="transactions"></div>
       </section>
     </main>
@@ -621,6 +671,32 @@
       const money = (v, currency = 'THB') => new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number.isFinite(v) ? v : 0);
       const num = (v) => new Intl.NumberFormat('en-US', { maximumFractionDigits: 4 }).format(Number.isFinite(v) ? v : 0);
       const attr = (value) => String(value ?? '').replace(/[&"'<>]/g, (char) => ({ '&': '&amp;', '"': '&quot;', "'": '&#39;', '<': '&lt;', '>': '&gt;' }[char]));
+      const knownNames = {
+        QQQM: 'Invesco NASDAQ 100 ETF',
+        SCB: 'Siam Commercial Bank PCL',
+        EUV: 'iShares MSCI Europe UCITS ETF',
+        CEG: 'Constellation Energy Corporation',
+        NET: 'Cloudflare Inc.',
+        GOOGL: 'Alphabet Inc.'
+      };
+      function holdingName(symbol) {
+        return knownNames[String(symbol || '').toUpperCase()] || 'Portfolio holding';
+      }
+      function holdingLogo(symbol) {
+        const key = String(symbol || '').toUpperCase();
+        if (key === 'SCB') return 'SCB';
+        if (key === 'QQQM') return 'Invesco';
+        if (key === 'EUV') return 'iShares';
+        if (key === 'CEG') return 'CEG';
+        return attr(key.slice(0, 4) || 'DCA');
+      }
+      function holdingLogoClass(symbol) {
+        return `logo-${String(symbol || '').toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+      }
+      function sparklineSvg(isPositive) {
+        const path = isPositive ? 'M2 20 C12 19 12 10 23 13 S34 19 45 11 58 16 70 8 88 12' : 'M2 8 C12 9 14 16 24 13 S36 17 47 20 60 23 72 18 88 20';
+        return `<svg class="sparkline${isPositive ? '' : ' down'}" viewBox="0 0 90 28" aria-hidden="true"><path d="${path}"></path></svg>`;
+      }
       $('date').value = new Date().toISOString().slice(0, 10);
       $('displayCurrency').value = state.displayCurrency;
       $('profitView').value = state.profitView;
@@ -1098,6 +1174,8 @@
         const value = rows.reduce((s, r) => s + convertAmount(r.currentValue, r.currency, displayCurrency), 0);
         const realized = rows.reduce((s, r) => s + convertAmount(r.realized, r.currency, displayCurrency), 0);
         const pl = value - cost;
+        const plPct = cost ? (pl / cost) * 100 : 0;
+        const realizedPct = cost ? (realized / cost) * 100 : 0;
         const visibleRows = rows
           .filter((row) => profitView === 'realized' ? row.soldQuantity > 0 : row.quantity > 0)
           .map((row) => ({
@@ -1108,36 +1186,60 @@
         $('displayCurrency').value = displayCurrency;
         $('profitView').value = profitView;
         $('portfolioValue').textContent = money(value, displayCurrency);
-        $('costBase').textContent = `Cost basis ${money(cost, displayCurrency)}`;
+        $('costBase').textContent = `ต้นทุนรวม ${money(cost, displayCurrency)}`;
         $('totalCost').textContent = money(cost, displayCurrency);
         $('currentValue').textContent = money(value, displayCurrency);
         $('profit').textContent = money(pl, displayCurrency);
         $('profit').className = pl >= 0 ? 'positive' : 'negative';
+        $('profitPct').textContent = `(${plPct >= 0 ? '+' : ''}${plPct.toFixed(2)}%)`;
+        $('profitPct').className = plPct >= 0 ? 'positive' : 'negative';
         $('realizedProfit').textContent = money(realized, displayCurrency);
         $('realizedProfit').className = realized >= 0 ? 'positive' : 'negative';
+        $('realizedProfitPct').textContent = `(${realizedPct >= 0 ? '+' : ''}${realizedPct.toFixed(2)}%)`;
+        $('realizedProfitPct').className = realizedPct >= 0 ? 'positive' : 'negative';
         $('fxNote').textContent = `FX: 1 USD = ${num(Number(state.fx?.rate) || 0)} THB`;
+        document.querySelectorAll('[data-profit-view]').forEach((button) => {
+          button.classList.toggle('active', button.dataset.profitView === profitView);
+        });
         renderGrowthChart(displayCurrency);
         $('quoteNote').textContent = state.quoteMeta?.updatedAt
           ? `Updated ${new Date(state.quoteMeta.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
           : 'Using saved prices';
         $('quoteNote').title = state.quoteMeta?.source || 'Saved prices';
-        $('holdings').innerHTML = visibleRows.length ? visibleRows.map((r) => `
+        $('holdings').innerHTML = visibleRows.length ? visibleRows.map((r) => {
+          const currentValueDisplay = convertAmount(r.currentValue, r.currency || 'THB', displayCurrency);
+          const profitAmountBase = profitView === 'realized' ? r.realized : r.pl;
+          const profitAmount = convertAmount(profitAmountBase, r.currency || 'THB', displayCurrency);
+          const profitPct = profitView === 'realized'
+            ? (r.cost ? (r.realized / r.cost) * 100 : 0)
+            : r.pct;
+          const profitClass = profitAmount >= 0 ? 'positive' : 'negative';
+          return `
           <article class="holding">
-            <div>
-              <strong>${r.symbol}</strong>
-              <div class="holding-meta">Avg ${money(r.avg, r.currency || 'THB')} · Qty ${num(r.quantity)} · Last ${money(r.currentPrice, r.currentPriceCurrency || r.currency || 'THB')}</div>
+            <div class="holding-name">
+              <div class="holding-logo ${holdingLogoClass(r.symbol)}">${holdingLogo(r.symbol)}</div>
+              <div>
+                <strong>${attr(r.symbol)}</strong>
+                <div class="holding-meta">${attr(holdingName(r.symbol))}</div>
+              </div>
             </div>
-            <div class="holding-value">
-              <strong>${money(convertAmount(r.currentValue, r.currency || 'THB', displayCurrency), displayCurrency)}</strong>
-              <span class="allocation">${r.allocation.toFixed(2)}% allocation</span>
+            <div class="holding-allocation">
+              <span>${r.allocation.toFixed(1)}%</span>
+              <i class="allocation-ring" style="--p:${Math.max(0, Math.min(100, r.allocation)).toFixed(1)}"></i>
+            </div>
+            <div class="holding-details">
+              <span>Avg ${money(r.avg, r.currency || 'THB')}</span>
+              <span>Last ${money(r.currentPrice, r.currentPriceCurrency || r.currency || 'THB')}</span>
+              <span>Qty ${num(r.quantity)}</span>
+              <strong>${money(currentValueDisplay, displayCurrency)}</strong>
             </div>
             <div class="holding-profit">
-              <span>${profitView === 'realized' ? 'Realized P/L' : 'Unrealized P/L'}</span>
-              ${profitView === 'realized'
-                ? `<span class="${r.realized >= 0 ? 'positive' : 'negative'}">${money(r.realized, r.currency || 'THB')} · Sold ${num(r.soldQuantity)}</span>`
-                : `<span class="${r.pl >= 0 ? 'positive' : 'negative'}">${money(r.pl, r.currency || 'THB')} (${r.pct.toFixed(2)}%)</span>`}
+              <span class="${profitClass}">${profitAmount >= 0 ? '+' : ''}${money(profitAmount, displayCurrency)}</span>
+              <span class="${profitClass}">(${profitPct >= 0 ? '+' : ''}${profitPct.toFixed(2)}%)</span>
+              ${sparklineSvg(profitAmount >= 0)}
             </div>
-          </article>`).join('') : `
+          </article>`;
+        }).join('') : `
           <div class="empty-state">
             <strong>${profitView === 'realized' ? 'No realized profit yet' : 'No open holdings yet'}</strong>
             ${profitView === 'realized' ? 'Sold positions will appear here.' : 'Upload a brokerage receipt to add your first DCA purchase.'}
@@ -1153,8 +1255,10 @@
               </button>
             </div>
             <article class="tx">
-              <div><strong>${tx.symbol} · ${tx.side.toUpperCase()}</strong><span class="muted">${tx.date} · ${num(tx.shares)} shares at ${money(tx.price, tx.currency || 'THB')}</span></div>
-              <strong>${money(Number(tx.stockValue) || tx.shares * tx.price, tx.currency || 'THB')}</strong>
+              <span class="tx-badge ${tx.side === 'sell' ? 'sell' : ''}">${tx.side.toUpperCase()}</span>
+              <div><strong>${attr(tx.symbol)}</strong><span>${attr(tx.date || '')}</span></div>
+              <div><strong>${num(Number(tx.shares) || 0)} shares</strong><span>@ ${money(Number(tx.price) || 0, tx.currency || 'THB')}</span></div>
+              <div><strong>${money(Number(tx.stockValue) || tx.shares * tx.price, tx.currency || 'THB')}</strong><span>Fee ${money(Number(tx.fee) || 0, tx.currency || 'THB')}</span></div>
               <div class="tx-actions">
                 <button class="tx-menu-action" type="button" aria-label="Edit ${attr(tx.symbol)}" data-tx-action="edit" data-tx-id="${attr(tx.id)}">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
@@ -1825,6 +1929,13 @@
         state.profitView = $('profitView').value;
         saveState();
         render();
+      });
+      document.querySelectorAll('[data-profit-view]').forEach((button) => {
+        button.addEventListener('click', () => {
+          state.profitView = button.dataset.profitView === 'realized' ? 'realized' : 'unrealized';
+          saveState();
+          render();
+        });
       });
       window.addEventListener('focus', refreshCloudTransactionsIfStale);
       document.addEventListener('visibilitychange', () => {
