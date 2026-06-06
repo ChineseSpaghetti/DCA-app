@@ -91,6 +91,8 @@
       .capture-actions button:active { background: #dff1e8; }
       .preview { display: none; position: relative; height: 180px; margin-top: 14px; border: 1px solid #dce5e2; border-radius: 8px; overflow: hidden; background: #eef5f2; }
       .preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+      .preview.ai-processing::before { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(90deg, transparent, rgba(0, 133, 77, .14), transparent); animation: ai-scan 1.35s ease-in-out infinite; }
+      .preview.ai-processing::after { content: "AI"; position: absolute; right: 10px; top: 10px; z-index: 2; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; color: #005f40; background: rgba(232, 247, 239, .92); font-size: .78rem; font-weight: 950; box-shadow: 0 6px 14px rgba(0, 54, 39, .14); }
       .bulk-review { display: none; margin-top: 16px; }
       .bulk-review.open { display: block; }
       .bulk-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
@@ -202,6 +204,21 @@
       .status-content { display: inline-flex; align-items: center; gap: 9px; }
       .inline-spinner { width: 16px; height: 16px; flex: 0 0 auto; border: 2px solid rgba(0,95,64,.22); border-top-color: #005f40; border-radius: 50%; animation: button-spin .72s linear infinite; }
       :root[data-theme="dark"] .inline-spinner { border-color: rgba(182,242,208,.24); border-top-color: #b6f2d0; }
+      .status.ai-processing { position: relative; overflow: hidden; border: 1px solid #b9e2d0; background: linear-gradient(135deg, #e8f7ef 0%, #f4fbf8 100%); box-shadow: inset 0 0 0 1px rgba(255,255,255,.55); }
+      :root[data-theme="dark"] .status.ai-processing { border-color: #275c49; background: linear-gradient(135deg, #14352d 0%, #0d1d1a 100%); }
+      .status.ai-processing::after { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 0%, rgba(255,255,255,.34) 45%, transparent 70%); transform: translateX(-100%); animation: ai-status-sheen 1.8s ease-in-out infinite; pointer-events: none; }
+      :root[data-theme="dark"] .status.ai-processing::after { background: linear-gradient(110deg, transparent 0%, rgba(156,231,191,.13) 45%, transparent 70%); }
+      .ai-loader { position: relative; z-index: 1; display: inline-grid; grid-template-columns: 22px auto; align-items: center; gap: 9px; }
+      .ai-orb { width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; color: white; background: #00854d; box-shadow: 0 0 0 6px rgba(0,133,77,.09); font-size: .62rem; font-weight: 950; animation: ai-orb-pulse 1.05s ease-in-out infinite; }
+      .ai-orb::before { content: "AI"; }
+      .ai-dots { display: inline-flex; gap: 3px; margin-left: 2px; }
+      .ai-dots i { width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: .42; animation: ai-dot 1s ease-in-out infinite; }
+      .ai-dots i:nth-child(2) { animation-delay: .15s; }
+      .ai-dots i:nth-child(3) { animation-delay: .3s; }
+      @keyframes ai-scan { 0% { transform: translateX(-120%); } 50% { transform: translateX(0); } 100% { transform: translateX(120%); } }
+      @keyframes ai-status-sheen { 0%, 20% { transform: translateX(-100%); } 80%, 100% { transform: translateX(100%); } }
+      @keyframes ai-orb-pulse { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 6px rgba(0,133,77,.09); } 50% { transform: scale(1.06); box-shadow: 0 0 0 10px rgba(0,133,77,.04); } }
+      @keyframes ai-dot { 0%, 100% { transform: translateY(0); opacity: .35; } 50% { transform: translateY(-3px); opacity: 1; } }
       .holdings, .transactions { display: grid; margin-top: 12px; }
       .holding { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 12px; padding: 13px 0; border-top: 1px solid #e5ece9; }
       .holding:first-child, .swipe-row:first-child { border-top: 0; }
@@ -1233,14 +1250,22 @@
       }
       function setStatus(message, loading = false) {
         $('ocrStatus').replaceChildren();
+        $('ocrStatus').classList.toggle('ai-processing', Boolean(loading));
+        $('preview').classList.toggle('ai-processing', Boolean(loading && screenshot));
         if (message) {
           const content = document.createElement('span');
           content.className = 'status-content';
           if (loading) {
-            const spinner = document.createElement('span');
-            spinner.className = 'inline-spinner';
-            spinner.setAttribute('aria-hidden', 'true');
-            content.append(spinner);
+            const loader = document.createElement('span');
+            loader.className = 'ai-loader';
+            loader.setAttribute('aria-hidden', 'true');
+            const orb = document.createElement('span');
+            orb.className = 'ai-orb';
+            const dots = document.createElement('span');
+            dots.className = 'ai-dots';
+            dots.append(document.createElement('i'), document.createElement('i'), document.createElement('i'));
+            loader.append(orb, dots);
+            content.append(loader);
           }
           content.append(document.createTextNode(message));
           $('ocrStatus').append(content);
@@ -1394,7 +1419,7 @@
         $('saveBulk').disabled = bulkBusy || !validCount;
         updateCaptureSaveMode();
         $('bulkSummary').textContent = bulkBusy
-          ? `Reading receipt ${validCount + 1}...`
+          ? `AI is reading receipt ${validCount + 1}...`
           : `${validCount} of ${bulkDrafts.length} receipts ready to save. Tap Edit to review a row.`;
         $('bulkList').innerHTML = bulkDrafts.map((draft) => {
           const valid = draftIsValid(draft);
@@ -1438,7 +1463,7 @@
           setStatus('OCR library is still loading. Try again in a moment.');
           return;
         }
-        setStatus('Gemini could not read the photo. Trying OCR...', true);
+        setStatus('AI could not read the photo clearly. Trying OCR...', true);
         try {
           const result = await Tesseract.recognize(screenshot, 'tha+eng');
           if (runId !== extractionRunId) return;
@@ -1446,7 +1471,7 @@
           setStatus('OCR filled the record. Please review before saving.');
         } catch (error) {
           if (runId !== extractionRunId) return;
-          setStatus('Gemini and OCR could not read this screenshot. Enter the values manually.');
+          setStatus('AI and OCR could not read this screenshot. Enter the values manually.');
         }
       }
       function applyParsedTransaction(parsed) {
@@ -1473,7 +1498,7 @@
         const controller = new AbortController();
         extractionController?.abort();
         extractionController = controller;
-        setStatus('Gemini is reading the photo...', true);
+        setStatus('AI is reading the receipt and checking the numbers...', true);
         try {
           const response = await fetch('/api/extract', {
             method: 'POST',
@@ -1485,7 +1510,7 @@
           if (runId !== extractionRunId) return;
           if (!response.ok) throw new Error(data.error || 'AI extraction failed.');
           const dateWarning = applyParsedTransaction(data);
-          setStatus(`Gemini filled the record. Confidence ${Math.round((data.confidence || 0) * 100)}%. Please review before saving.${dateWarning}`);
+          setStatus(`AI filled the record. Confidence ${Math.round((data.confidence || 0) * 100)}%. Please review before saving.${dateWarning}`);
         } catch (error) {
           if (runId !== extractionRunId || error.name === 'AbortError') return;
           await readScreenshot(runId);
@@ -1599,10 +1624,10 @@
         bulkDrafts = [];
         selectedBulkDraftId = '';
         renderBulkDrafts();
-        setStatus(`Reading ${files.length} receipts...`, true);
+        setStatus(`AI is reading ${files.length} receipts...`, true);
         for (let index = 0; index < files.length; index += 1) {
           if (runId !== extractionRunId) return;
-          setStatus(`Reading receipt ${index + 1} of ${files.length}...`, true);
+          setStatus(`AI is reading receipt ${index + 1} of ${files.length}...`, true);
           try {
             const image = await readFileAsDataUrl(files[index]);
             const draft = await extractImageDraft(image, files[index].name);
