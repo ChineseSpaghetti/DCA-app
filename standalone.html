@@ -853,13 +853,18 @@
         const date = new Date(year, month - 1 + offset, 1);
         return Number.isNaN(date.getTime()) ? '' : `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       }
-      function visibleGrowthPoints(points) {
-        if (!points.length) return [];
+      function monthRange(startMonth, endMonth) {
+        const months = [];
+        if (!startMonth || !endMonth) return months;
+        for (let month = startMonth; month && month <= endMonth; month = addMonths(month, 1)) {
+          months.push(month);
+          if (months.length > 72) break;
+        }
+        return months;
+      }
+      function chartTimeframeMonths() {
         const timeframeMonths = { '3M': 3, '6M': 6, '1Y': 12, '3Y': 36, '5Y': 60 };
-        const monthCount = timeframeMonths[state.chartTimeframe] || 12;
-        const latestMonth = points[points.length - 1].month;
-        const firstMonth = addMonths(latestMonth, -(monthCount - 1));
-        return points.filter((point) => point.month >= firstMonth);
+        return timeframeMonths[state.chartTimeframe] || 12;
       }
       function portfolioSnapshotRows(map) {
         return [...map.values()].map((row) => {
@@ -872,41 +877,44 @@
       }
       function growthSeries(displayCurrency) {
         const map = new Map();
-        const points = [];
         const chronologicalTransactions = [...state.txs].sort((a, b) => {
           const byDate = String(a.date || '').localeCompare(String(b.date || ''));
           if (byDate) return byDate;
           return String(a.createdAt || a.id || '').localeCompare(String(b.createdAt || b.id || ''));
         });
-        chronologicalTransactions.forEach((tx) => {
-          const symbol = String(tx.symbol || '').toUpperCase();
-          if (!symbol) return;
-          const row = map.get(symbol) || { symbol, quantity: 0, cost: 0, currency: tx.currency || 'THB' };
-          const qty = Number(tx.shares) || 0;
-          const gross = Number(tx.stockValue) || qty * (Number(tx.price) || 0);
-          const fee = Number(tx.fee) || 0;
-          if (tx.side === 'sell') {
-            const avg = row.quantity ? row.cost / row.quantity : 0;
-            const matchedQty = Math.min(qty, row.quantity);
-            row.quantity -= matchedQty;
-            row.cost -= avg * matchedQty;
-          } else {
-            row.quantity += qty;
-            row.cost += gross + fee;
+        const validTransactions = chronologicalTransactions.filter((tx) => String(tx.symbol || '').trim() && String(tx.date || '').slice(0, 7));
+        if (!validTransactions.length) return [];
+        const latestMonth = String(validTransactions[validTransactions.length - 1].date || '').slice(0, 7);
+        const firstVisibleMonth = addMonths(latestMonth, -(chartTimeframeMonths() - 1));
+        const months = monthRange(firstVisibleMonth, latestMonth);
+        let txIndex = 0;
+        return months.map((month) => {
+          while (txIndex < validTransactions.length && String(validTransactions[txIndex].date || '').slice(0, 7) <= month) {
+            const tx = validTransactions[txIndex];
+            const symbol = String(tx.symbol || '').toUpperCase();
+            const row = map.get(symbol) || { symbol, quantity: 0, cost: 0, currency: tx.currency || 'THB' };
+            const qty = Number(tx.shares) || 0;
+            const gross = Number(tx.stockValue) || qty * (Number(tx.price) || 0);
+            const fee = Number(tx.fee) || 0;
+            if (tx.side === 'sell') {
+              const avg = row.quantity ? row.cost / row.quantity : 0;
+              const matchedQty = Math.min(qty, row.quantity);
+              row.quantity -= matchedQty;
+              row.cost -= avg * matchedQty;
+            } else {
+              row.quantity += qty;
+              row.cost += gross + fee;
+            }
+            if (Math.abs(row.quantity) < 1e-10) row.quantity = 0;
+            if (Math.abs(row.cost) < 1e-10) row.cost = 0;
+            map.set(symbol, row);
+            txIndex += 1;
           }
-          if (Math.abs(row.quantity) < 1e-10) row.quantity = 0;
-          if (Math.abs(row.cost) < 1e-10) row.cost = 0;
-          map.set(symbol, row);
           const snapshots = portfolioSnapshotRows(map);
           const capital = snapshots.reduce((sum, item) => sum + convertAmount(item.cost, item.currency, displayCurrency), 0);
           const value = snapshots.reduce((sum, item) => sum + convertAmount(item.currentValue, item.currency, displayCurrency), 0);
-          const month = String(tx.date || '').slice(0, 7);
-          const previous = points[points.length - 1];
-          const point = { month, label: monthLabel(month), capital, value };
-          if (previous?.month === month) points[points.length - 1] = point;
-          else points.push(point);
+          return { month, label: monthLabel(month), capital, value };
         });
-        return points;
       }
       function chartPath(points, chartHeight) {
         return points.map((point, index) => `${index ? 'L' : 'M'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(' ');
@@ -935,8 +943,7 @@
       }
       function renderGrowthChart(displayCurrency) {
         renderTimeframeControl();
-        const allPoints = growthSeries(displayCurrency);
-        const points = visibleGrowthPoints(allPoints);
+        const points = growthSeries(displayCurrency);
         const latest = points[points.length - 1] || { capital: 0, value: 0, month: '' };
         const selected = points.find((point) => point.month === state.chartSelectedMonth) || latest;
         state.chartSelectedMonth = selected.month || '';
