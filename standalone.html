@@ -533,6 +533,7 @@
       let selectedBulkDraftId = '';
       let bulkBusy = false;
       let lastCloudRefreshAt = 0;
+      let chartTooltipVisible = false;
       const $ = (id) => document.getElementById(id);
       const money = (v, currency = 'THB') => new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number.isFinite(v) ? v : 0);
       const num = (v) => new Intl.NumberFormat('en-US', { maximumFractionDigits: 4 }).format(Number.isFinite(v) ? v : 0);
@@ -919,10 +920,18 @@
       function chartPath(points, chartHeight) {
         return points.map((point, index) => `${index ? 'L' : 'M'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(' ');
       }
-      function selectChartMonth(month, persist = false) {
-        if (!month || state.chartSelectedMonth === month) return;
+      function selectChartMonth(month, options = {}) {
+        if (!month) return;
+        const nextTooltipVisible = options.showTooltip ?? chartTooltipVisible;
+        if (state.chartSelectedMonth === month && chartTooltipVisible === nextTooltipVisible) return;
         state.chartSelectedMonth = month;
-        if (persist) saveState();
+        chartTooltipVisible = nextTooltipVisible;
+        if (options.persist) saveState();
+        render();
+      }
+      function hideChartTooltip() {
+        if (!chartTooltipVisible) return;
+        chartTooltipVisible = false;
         render();
       }
       function updateChartStats(point, displayCurrency) {
@@ -977,10 +986,12 @@
         const selectedPct = selectedPoint.capital ? (selectedGain / selectedPoint.capital) * 100 : 0;
         const tooltipWidth = 172;
         const tooltipHeight = 78;
-        const tooltipX = Math.min(Math.max(selectedPoint.x - tooltipWidth / 2, pad.left), width - pad.right - tooltipWidth);
-        const tooltipY = Math.max(8, selectedPoint.valueY - tooltipHeight - 14);
+        const preferRight = selectedPoint.x < width / 2;
+        const tooltipX = Math.min(Math.max(preferRight ? selectedPoint.x + 18 : selectedPoint.x - tooltipWidth - 18, pad.left), width - pad.right - tooltipWidth);
+        const tooltipY = Math.min(Math.max(selectedPoint.valueY - tooltipHeight / 2, pad.top), height - pad.bottom - tooltipHeight);
         $('growthChartWrap').innerHTML = `
           <svg class="growth-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Capital versus value chart">
+            <rect class="growth-hover-area" data-chart-hover-area="true" x="${pad.left}" y="${pad.top}" width="${width - pad.left - pad.right}" height="${height - pad.top - pad.bottom}" fill="transparent"></rect>
             <line class="growth-grid" x1="${pad.left}" y1="${pad.top}" x2="${width - pad.right}" y2="${pad.top}"></line>
             <line class="growth-grid" x1="${pad.left}" y1="${(height - pad.bottom + pad.top) / 2}" x2="${width - pad.right}" y2="${(height - pad.bottom + pad.top) / 2}"></line>
             <line class="growth-axis" x1="${pad.left}" y1="${height - pad.bottom}" x2="${width - pad.right}" y2="${height - pad.bottom}"></line>
@@ -989,13 +1000,13 @@
             <path class="growth-value" d="${valueLine}"></path>
             ${chartPoints.map((point) => `<circle class="growth-dot${point.month === state.chartSelectedMonth ? ' selected' : ''}" cx="${point.x.toFixed(1)}" cy="${point.valueY.toFixed(1)}" r="${point.month === state.chartSelectedMonth ? '7' : '4.5'}"></circle><circle class="growth-hit" data-chart-month="${attr(point.month)}" tabindex="0" role="button" aria-label="${attr(`${monthLongLabel(point.month)} value ${money(point.value, displayCurrency)}`)}" cx="${point.x.toFixed(1)}" cy="${point.valueY.toFixed(1)}" r="16"><title>${attr(monthLongLabel(point.month))}: ${attr(money(point.value, displayCurrency))}</title></circle>`).join('')}
             ${chartPoints.map((point) => `<text class="growth-label" x="${point.x.toFixed(1)}" y="${height - 8}" text-anchor="middle">${point.label}</text>`).join('')}
-            <g class="growth-tooltip" transform="translate(${tooltipX.toFixed(1)} ${tooltipY.toFixed(1)})">
+            ${chartTooltipVisible ? `<g class="growth-tooltip" transform="translate(${tooltipX.toFixed(1)} ${tooltipY.toFixed(1)})">
               <rect class="growth-tooltip-card" width="${tooltipWidth}" height="${tooltipHeight}" rx="10"></rect>
               <text class="growth-tooltip-title" x="12" y="20">${attr(monthLongLabel(selectedPoint.month))}</text>
               <text class="growth-tooltip-text" x="12" y="39">Capital ${attr(money(selectedPoint.capital, displayCurrency))}</text>
               <text class="growth-tooltip-text" x="12" y="56">Value ${attr(money(selectedPoint.value, displayCurrency))}</text>
               <text class="${selectedGain >= 0 ? 'growth-tooltip-gain' : 'growth-tooltip-loss'}" x="12" y="72">${selectedGain >= 0 ? '+' : ''}${selectedPct.toFixed(2)}%</text>
-            </g>
+            </g>` : ''}
           </svg>`;
       }
       function render() {
@@ -1683,24 +1694,46 @@
       $('growthChartWrap').addEventListener('click', (event) => {
         const point = event.target.closest('[data-chart-month]');
         if (!point) return;
-        selectChartMonth(point.dataset.chartMonth, true);
+        selectChartMonth(point.dataset.chartMonth, { persist: true, showTooltip: true });
       });
-      $('growthChartWrap').addEventListener('mouseover', (event) => {
-        const point = event.target.closest('[data-chart-month]');
-        if (!point) return;
-        selectChartMonth(point.dataset.chartMonth);
+      $('growthChartWrap').addEventListener('mousemove', (event) => {
+        const svg = event.target.closest('svg.growth-chart');
+        if (!svg || !$('growthChartWrap').contains(svg)) return;
+        const bounds = svg.getBoundingClientRect();
+        const viewBox = svg.viewBox.baseVal;
+        const x = ((event.clientX - bounds.left) / bounds.width) * viewBox.width;
+        const y = ((event.clientY - bounds.top) / bounds.height) * viewBox.height;
+        const plot = { left: 18, top: 18, right: 622, bottom: 176 };
+        if (x < plot.left || x > plot.right || y < plot.top || y > plot.bottom) {
+          hideChartTooltip();
+          return;
+        }
+        const points = [...svg.querySelectorAll('[data-chart-month]')];
+        const nearest = points.reduce((best, point) => {
+          const distance = Math.abs(Number(point.getAttribute('cx')) - x);
+          return !best || distance < best.distance ? { point, distance } : best;
+        }, null);
+        if (nearest?.point) selectChartMonth(nearest.point.dataset.chartMonth, { showTooltip: true });
+      });
+      $('growthChartWrap').addEventListener('mouseleave', hideChartTooltip);
+      $('growthChartWrap').addEventListener('mouseout', (event) => {
+        const svg = event.target.closest('svg.growth-chart');
+        if (svg && !svg.contains(event.relatedTarget)) hideChartTooltip();
       });
       $('growthChartWrap').addEventListener('focusin', (event) => {
         const point = event.target.closest('[data-chart-month]');
         if (!point) return;
-        selectChartMonth(point.dataset.chartMonth);
+        selectChartMonth(point.dataset.chartMonth, { showTooltip: true });
+      });
+      $('growthChartWrap').addEventListener('focusout', (event) => {
+        if (!$('growthChartWrap').contains(event.relatedTarget)) hideChartTooltip();
       });
       $('growthChartWrap').addEventListener('keydown', (event) => {
         if (!['Enter', ' '].includes(event.key)) return;
         const point = event.target.closest('[data-chart-month]');
         if (!point) return;
         event.preventDefault();
-        selectChartMonth(point.dataset.chartMonth, true);
+        selectChartMonth(point.dataset.chartMonth, { persist: true, showTooltip: true });
       });
       $('profitView').addEventListener('change', () => {
         state.profitView = $('profitView').value;
