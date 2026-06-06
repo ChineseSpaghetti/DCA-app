@@ -157,12 +157,15 @@
       :root[data-theme="dark"] .tf-options button { color: #b9cbc6; }
       :root[data-theme="dark"] .tf-options button:hover { color: #b6f2d0; background: #17352d; }
       :root[data-theme="dark"] .tf-options button.active { color: #9ce7bf; background: #14352d; }
-      .growth-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
-      .growth-stat { padding: 10px 11px; border-radius: 8px; background: #f0f7f4; }
-      :root[data-theme="dark"] .growth-stat { background: #0d1d1a; }
+      .growth-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
+      .growth-stat { min-height: 78px; display: grid; grid-template-columns: minmax(0, 1fr) 46px; align-items: center; gap: 10px; padding: 14px 16px; border-radius: 10px; background: linear-gradient(135deg, #f0f7f4 0%, #e8f7ef 100%); }
+      :root[data-theme="dark"] .growth-stat { background: linear-gradient(135deg, #0d1d1a 0%, #14352d 100%); }
       .growth-stat span { display: block; color: #667875; font-size: .78rem; }
       :root[data-theme="dark"] .growth-stat span { color: #a7bbb5; }
-      .growth-stat strong { display: block; margin-top: 2px; font-size: .95rem; }
+      .growth-stat strong { display: block; margin-top: 4px; font-size: 1.02rem; }
+      .growth-stat-icon { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 50%; color: #00854d; background: #d8f0e5; }
+      :root[data-theme="dark"] .growth-stat-icon { color: #9ce7bf; background: #1d4938; }
+      .growth-stat-icon svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2.25; }
       .growth-chart { width: 100%; height: 210px; margin-top: 14px; overflow: visible; }
       .growth-axis, .growth-grid { stroke: #dfe8e5; stroke-width: 1; }
       :root[data-theme="dark"] .growth-axis, :root[data-theme="dark"] .growth-grid { stroke: #25483f; }
@@ -170,7 +173,9 @@
       .growth-value { fill: none; stroke: #00854d; stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; }
       .growth-fill { fill: rgba(0, 133, 77, .1); stroke: none; }
       :root[data-theme="dark"] .growth-fill { fill: rgba(132, 225, 176, .12); }
-      .growth-hit { fill: transparent; cursor: pointer; }
+      .growth-hit { fill: transparent; stroke: transparent; cursor: pointer; }
+      .growth-hit:focus { outline: none; stroke: rgba(0, 123, 85, .36); stroke-width: 4; }
+      :root[data-theme="dark"] .growth-hit:focus { stroke: rgba(156, 231, 191, .42); }
       .growth-dot { fill: #00854d; stroke: white; stroke-width: 2; pointer-events: none; }
       .growth-dot.selected { fill: #005f40; stroke-width: 3; }
       :root[data-theme="dark"] .growth-dot { stroke: #10221e; }
@@ -349,7 +354,7 @@
         <div class="growth-head">
           <div>
             <h2>Capital vs value</h2>
-            <p>Tap a month to inspect your DCA progress.</p>
+            <p>Hover or tap a month to inspect your DCA progress.</p>
           </div>
           <div class="growth-controls">
             <div class="tf-menu" id="timeframeMenu">
@@ -368,12 +373,27 @@
             </div>
           </div>
         </div>
-        <div class="growth-stats">
-          <div class="growth-stat"><span>Capital</span><strong id="chartCapital">฿0.00</strong></div>
-          <div class="growth-stat"><span>Capital + P/L</span><strong id="chartValue">฿0.00</strong></div>
-          <div class="growth-stat"><span>Return</span><strong id="chartReturn">0.00%</strong></div>
-        </div>
         <div id="growthChartWrap"></div>
+        <div class="growth-stats">
+          <div class="growth-stat">
+            <div><span>Capital</span><strong id="chartCapital">฿0.00</strong></div>
+            <div class="growth-stat-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><ellipse cx="8" cy="7" rx="5" ry="3"></ellipse><path d="M3 7v4c0 1.7 2.2 3 5 3s5-1.3 5-3V7"></path><path d="M3 11v4c0 1.7 2.2 3 5 3 1.1 0 2.1-.2 2.9-.6"></path><ellipse cx="16" cy="13" rx="5" ry="3"></ellipse><path d="M11 13v4c0 1.7 2.2 3 5 3s5-1.3 5-3v-4"></path></svg>
+            </div>
+          </div>
+          <div class="growth-stat">
+            <div><span>Capital + P/L</span><strong id="chartValue">฿0.00</strong></div>
+            <div class="growth-stat-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M4 17l5-5 4 4 7-8"></path><path d="M14 8h6v6"></path></svg>
+            </div>
+          </div>
+          <div class="growth-stat">
+            <div><span>Return</span><strong id="chartReturn">0.00%</strong></div>
+            <div class="growth-stat-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M19 5L5 19"></path><circle cx="7" cy="7" r="2.4"></circle><circle cx="17" cy="17" r="2.4"></circle></svg>
+            </div>
+          </div>
+        </div>
         <small class="quote-note">Uses current prices for value, not historical quote data.</small>
       </section>
 
@@ -891,6 +911,12 @@
       function chartPath(points, chartHeight) {
         return points.map((point, index) => `${index ? 'L' : 'M'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(' ');
       }
+      function selectChartMonth(month, persist = false) {
+        if (!month || state.chartSelectedMonth === month) return;
+        state.chartSelectedMonth = month;
+        if (persist) saveState();
+        render();
+      }
       function updateChartStats(point, displayCurrency) {
         const gain = point.value - point.capital;
         $('chartCapital').textContent = money(point.capital, displayCurrency);
@@ -954,7 +980,7 @@
             <path class="growth-fill" d="${fillPath}"></path>
             <path class="growth-capital" d="${capitalLine}"></path>
             <path class="growth-value" d="${valueLine}"></path>
-            ${chartPoints.map((point) => `<circle class="growth-dot${point.month === state.chartSelectedMonth ? ' selected' : ''}" cx="${point.x.toFixed(1)}" cy="${point.valueY.toFixed(1)}" r="${point.month === state.chartSelectedMonth ? '7' : '4.5'}"></circle><circle class="growth-hit" data-chart-month="${attr(point.month)}" cx="${point.x.toFixed(1)}" cy="${point.valueY.toFixed(1)}" r="16"><title>${attr(monthLongLabel(point.month))}: ${attr(money(point.value, displayCurrency))}</title></circle>`).join('')}
+            ${chartPoints.map((point) => `<circle class="growth-dot${point.month === state.chartSelectedMonth ? ' selected' : ''}" cx="${point.x.toFixed(1)}" cy="${point.valueY.toFixed(1)}" r="${point.month === state.chartSelectedMonth ? '7' : '4.5'}"></circle><circle class="growth-hit" data-chart-month="${attr(point.month)}" tabindex="0" role="button" aria-label="${attr(`${monthLongLabel(point.month)} value ${money(point.value, displayCurrency)}`)}" cx="${point.x.toFixed(1)}" cy="${point.valueY.toFixed(1)}" r="16"><title>${attr(monthLongLabel(point.month))}: ${attr(money(point.value, displayCurrency))}</title></circle>`).join('')}
             ${chartPoints.map((point) => `<text class="growth-label" x="${point.x.toFixed(1)}" y="${height - 8}" text-anchor="middle">${point.label}</text>`).join('')}
             <g class="growth-tooltip" transform="translate(${tooltipX.toFixed(1)} ${tooltipY.toFixed(1)})">
               <rect class="growth-tooltip-card" width="${tooltipWidth}" height="${tooltipHeight}" rx="10"></rect>
@@ -1650,9 +1676,24 @@
       $('growthChartWrap').addEventListener('click', (event) => {
         const point = event.target.closest('[data-chart-month]');
         if (!point) return;
-        state.chartSelectedMonth = point.dataset.chartMonth;
-        saveState();
-        render();
+        selectChartMonth(point.dataset.chartMonth, true);
+      });
+      $('growthChartWrap').addEventListener('mouseover', (event) => {
+        const point = event.target.closest('[data-chart-month]');
+        if (!point) return;
+        selectChartMonth(point.dataset.chartMonth);
+      });
+      $('growthChartWrap').addEventListener('focusin', (event) => {
+        const point = event.target.closest('[data-chart-month]');
+        if (!point) return;
+        selectChartMonth(point.dataset.chartMonth);
+      });
+      $('growthChartWrap').addEventListener('keydown', (event) => {
+        if (!['Enter', ' '].includes(event.key)) return;
+        const point = event.target.closest('[data-chart-month]');
+        if (!point) return;
+        event.preventDefault();
+        selectChartMonth(point.dataset.chartMonth, true);
       });
       $('profitView').addEventListener('change', () => {
         state.profitView = $('profitView').value;
