@@ -8,26 +8,29 @@
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <style>
       :root {
-        --ink: #102626;
-        --muted: #667875;
-        --green: #005f40;
-        --green-2: #00854d;
-        --mint: #e8f7ef;
-        --line: #dfe8e5;
-        --card: rgba(255,255,255,.88);
-        --shadow: 0 16px 42px rgba(0, 54, 39, .08);
+        --ink: #171914;
+        --muted: #667066;
+        --green: #3f9347;
+        --green-2: #2f7f3a;
+        --mint: #edf6ea;
+        --line: #edf0eb;
+        --card: rgba(255,255,255,.96);
+        --shadow: 0 18px 42px rgba(39, 77, 43, .08);
         font-family: "Noto Sans Thai", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         color: var(--ink);
         background: #f4f8f6;
       }
       :root[data-theme="dark"] {
-        --ink: #edf7f3;
-        --muted: #a7bbb5;
-        --card: rgba(16, 34, 30, .9);
-        --line: #25483f;
-        --shadow: 0 16px 42px rgba(0,0,0,.28);
+        --ink: #f4f7f0;
+        --muted: #b2bbb8;
+        --green: #2cc55e;
+        --green-2: #19a84d;
+        --mint: #11261d;
+        --card: rgba(15, 27, 35, .86);
+        --line: #263641;
+        --shadow: 0 18px 42px rgba(0,0,0,.36);
         color: var(--ink);
-        background: #071311;
+        background: #000f14;
       }
       * { box-sizing: border-box; }
       body {
@@ -53,20 +56,42 @@
       button:focus-visible { outline: 3px solid rgba(0, 123, 85, .28); outline-offset: 2px; }
       .app { width: min(100%, 940px); margin: 0 auto; padding: 28px 18px 44px; }
       header { display: grid; grid-template-columns: 58px minmax(0, 1fr) 58px; align-items: center; gap: 14px; margin-bottom: 22px; }
-      header > div:nth-child(2) { text-align: left; }
+      header > div:nth-child(2) { text-align: center; }
       h1, h2, p { margin: 0; }
       h1 { font-size: 2rem; line-height: 1.05; letter-spacing: -.045em; }
+      .brand-logo { display: block; width: min(100%, 282px); height: auto; max-height: 58px; object-fit: contain; object-position: center; margin: 0 auto; }
       h2 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.035em; text-wrap: balance; }
       header p { margin-top: 5px; color: var(--muted); font-size: .98rem; }
       header p, section p, label span, .muted { color: var(--muted); }
       :root[data-theme="dark"] header p, :root[data-theme="dark"] section p, :root[data-theme="dark"] label span, :root[data-theme="dark"] .muted { color: #a7bbb5; }
       .icon-btn { width: 58px; height: 58px; border: 0; border-radius: 14px; background: #e7f3ee; color: #006b49; font-weight: 900; box-shadow: 0 10px 22px rgba(0, 95, 64, .08); }
-      .theme-toggle { font-size: 1.15rem; line-height: 1; }
+      .icon-btn svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2.2; }
+      .settings-menu .icon-btn { background: transparent; box-shadow: none; border-radius: 0; }
+      .settings-menu .icon-btn:hover { background: transparent; color: #004d35; }
+      .settings-menu .icon-btn:active { background: transparent; }
       .icon-btn:hover { background: #cfeade; color: #004d35; }
       .icon-btn:active { background: #b8decc; }
       :root[data-theme="dark"] .icon-btn { background: #15342b; color: #84e1b0; }
       :root[data-theme="dark"] .icon-btn:hover { background: #1b4639; color: #b6f2d0; }
       :root[data-theme="dark"] .icon-btn:active { background: #225645; }
+      :root[data-theme="dark"] .settings-menu .icon-btn, :root[data-theme="dark"] .settings-menu .icon-btn:hover, :root[data-theme="dark"] .settings-menu .icon-btn:active { background: transparent; box-shadow: none; }
+      .settings-menu { position: relative; width: 58px; }
+      .settings-popover { position: absolute; top: 66px; left: 0; z-index: 40; width: min(330px, calc(100vw - 36px)); display: none; gap: 12px; padding: 14px; border: 1px solid #dbe5e1; border-radius: 18px; background: rgba(255,255,255,.96); box-shadow: 0 18px 36px rgba(0, 54, 39, .16); backdrop-filter: blur(14px); }
+      .settings-popover.open { display: grid; }
+      :root[data-theme="dark"] .settings-popover { border-color: #25483f; background: rgba(16,34,30,.96); box-shadow: 0 18px 36px rgba(0,0,0,.32); }
+      .settings-title { display: block; color: var(--ink); font-size: .95rem; font-weight: 950; }
+      .settings-hint { display: block; margin-top: 2px; color: var(--muted); font-size: .82rem; font-weight: 700; }
+      .setting-row { min-height: 58px; display: grid; grid-template-columns: 38px minmax(0, 1fr); align-items: center; gap: 11px; border: 1px solid #dce8e3; border-radius: 15px; background: #f8fcfa; color: #15302e; padding: 10px 12px; text-align: left; }
+      .setting-row:hover { border-color: #9bcdb7; background: #eef8f4; color: #005f40; }
+      :root[data-theme="dark"] .setting-row { border-color: #25483f; background: #0d1d1a; color: #edf7f3; }
+      :root[data-theme="dark"] .setting-row:hover { border-color: #5a917d; background: #17352d; color: #b6f2d0; }
+      .setting-icon { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 13px; color: #007044; background: #e3f4ec; }
+      .setting-icon svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2.1; }
+      :root[data-theme="dark"] .setting-icon { color: #9ce7bf; background: #14352d; }
+      .setting-field { display: grid; grid-template-columns: 38px minmax(0, 1fr); align-items: center; gap: 11px; padding: 10px 12px; border: 1px solid #dce8e3; border-radius: 15px; background: #f8fcfa; }
+      :root[data-theme="dark"] .setting-field { border-color: #25483f; background: #0d1d1a; }
+      .setting-field select { min-height: 44px; border-radius: 12px; padding: 9px 12px; color: #000; font-weight: 700; }
+      .currency-select-wrap { display: block; }
       .account-menu { position: relative; width: 58px; justify-self: end; }
       .account-btn { width: 58px; height: 58px; border: 0; border-radius: 50%; background: #dff3e9; color: #006b49; display: grid; place-items: center; overflow: hidden; padding: 0; box-shadow: 0 10px 22px rgba(0, 95, 64, .08); }
       .account-btn:hover { background: #cfeade; color: #004d35; }
@@ -104,8 +129,6 @@
       :root[data-theme="dark"] .summary-metric span { color: #a7bbb5; }
       :root[data-theme="dark"] .summary-metric small { color: #d7e9e3; }
       :root[data-theme="dark"] .summary-metric:first-child strong { color: #9ce7bf; }
-      .currency-control { position: absolute; right: 22px; top: 18px; width: 118px; color: var(--muted); font-size: .82rem; }
-      .currency-control select { min-height: 44px; border-radius: 14px; padding: 9px 34px 9px 13px; font-weight: 850; }
       .fx-note { display: block; margin-top: 8px; color: #667875; font-size: .82rem; }
       :root[data-theme="dark"] .fx-note { color: #a7bbb5; }
       .tabs { display: grid; grid-template-columns: repeat(3, 1fr); margin: 22px 0 16px; border: 1px solid #dbe5e1; border-radius: 16px; background: rgba(255,255,255,.86); overflow: hidden; box-shadow: 0 10px 28px rgba(0, 54, 39, .06); }
@@ -121,8 +144,8 @@
       section { margin-top: 18px; padding: 24px; border: 1px solid rgba(223,232,229,.95); border-radius: 18px; background: var(--card); box-shadow: var(--shadow); backdrop-filter: blur(14px); }
       :root[data-theme="dark"] section { border-color: #25483f; background: var(--card); }
       .capture-actions { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 16px; }
-      .capture-actions button { min-height: 118px; display: grid; place-items: center; gap: 6px; border: 1px dashed #9bcdb7; border-radius: 18px; background: linear-gradient(135deg, #f7fbf9, #eaf7f0); color: #005f40; font-weight: 900; font-size: 1.05rem; }
-      .capture-actions button::before { content: "+"; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; color: white; background: #00854d; font-size: 1.45rem; box-shadow: 0 10px 22px rgba(0,133,77,.2); }
+      .capture-actions button { min-height: auto; }
+      .capture-actions button::before { content: none; }
       :root[data-theme="dark"] .capture-actions button, :root[data-theme="dark"] .secondary { border-color: #42685d; background: #132b26; color: #dff7ed; }
       .capture-actions button:hover { border-color: #7ab69d; background: #eef8f4; color: #004d35; }
       .capture-actions button:active { background: #dff1e8; }
@@ -349,6 +372,222 @@
       :root[data-theme="dark"] .success-card p { color: #a7bbb5; }
       .success-detail { margin: 14px 0 16px; padding: 11px 12px; border-radius: 8px; background: #f0f7f4; color: #15302e; font-size: .9rem; line-height: 1.5; text-align: left; white-space: pre-line; }
       :root[data-theme="dark"] .success-detail { background: #0d1d1a; color: #dff7ed; }
+      :root:not([data-theme="dark"]) body {
+        background:
+          radial-gradient(circle at 76% 8%, rgba(63, 147, 71, .08), transparent 24%),
+          radial-gradient(circle at 18% 2%, rgba(237, 246, 234, .9), transparent 28%),
+          #fbfcfa;
+      }
+      :root:not([data-theme="dark"]) .app { background: transparent; }
+      :root:not([data-theme="dark"]) header { color: #121510; }
+      :root:not([data-theme="dark"]) .settings-menu .icon-btn { color: #171914; }
+      :root:not([data-theme="dark"]) .settings-menu .icon-btn:hover { color: #3f9347; }
+      :root:not([data-theme="dark"]) .account-btn,
+      :root:not([data-theme="dark"]) .icon-btn:not(#settingsToggle) {
+        background: #f2f8ef;
+        color: #2f7f3a;
+        box-shadow: 0 12px 26px rgba(63, 147, 71, .1);
+      }
+      :root:not([data-theme="dark"]) .summary {
+        border: 0;
+        background:
+          radial-gradient(circle at 86% 58%, rgba(255,255,255,.12), transparent 26%),
+          linear-gradient(135deg, #3f9347 0%, #4d9f53 48%, #2f7f3a 100%);
+        box-shadow: 0 18px 36px rgba(47, 127, 58, .24);
+      }
+      :root:not([data-theme="dark"]) .summary-metric { border-color: rgba(255,255,255,.28); }
+      :root:not([data-theme="dark"]) .summary-metric span,
+      :root:not([data-theme="dark"]) .summary-metric small,
+      :root:not([data-theme="dark"]) .summary .fx-note {
+        color: rgba(255,255,255,.84);
+      }
+      :root:not([data-theme="dark"]) .summary-metric strong,
+      :root:not([data-theme="dark"]) .summary-metric:first-child strong,
+      :root:not([data-theme="dark"]) .summary .positive,
+      :root:not([data-theme="dark"]) .summary .negative {
+        color: #fff;
+      }
+      :root:not([data-theme="dark"]) section,
+      :root:not([data-theme="dark"]) .tabs,
+      :root:not([data-theme="dark"]) .settings-popover,
+      :root:not([data-theme="dark"]) .account-popover {
+        border-color: #edf0eb;
+        background: rgba(255,255,255,.96);
+        box-shadow: 0 16px 38px rgba(34, 49, 36, .08);
+      }
+      :root:not([data-theme="dark"]) .setting-row,
+      :root:not([data-theme="dark"]) .setting-field,
+      :root:not([data-theme="dark"]) .quick-card,
+      :root:not([data-theme="dark"]) .growth-stat,
+      :root:not([data-theme="dark"]) .capture-actions button {
+        border-color: #e4ece1;
+        background: #f5faf3;
+      }
+      :root:not([data-theme="dark"]) .setting-icon,
+      :root:not([data-theme="dark"]) .quick-card-icon,
+      :root:not([data-theme="dark"]) .growth-stat-icon,
+      :root:not([data-theme="dark"]) .tx-menu-action,
+      :root:not([data-theme="dark"]) .tx-badge {
+        color: #3f9347;
+        background: #edf6ea;
+      }
+      :root:not([data-theme="dark"]) .primary,
+      :root:not([data-theme="dark"]) .profit-toggle button.active,
+      :root:not([data-theme="dark"]) .capture-actions button::before {
+        background: linear-gradient(135deg, #3f9347, #2f7f3a);
+        box-shadow: 0 12px 22px rgba(63, 147, 71, .22);
+      }
+      :root:not([data-theme="dark"]) .secondary,
+      :root:not([data-theme="dark"]) .tf-trigger,
+      :root:not([data-theme="dark"]) .portfolio-actions select {
+        border-color: #dfe9dc;
+        color: #2f7f3a;
+        background: #f2f8ef;
+      }
+      :root:not([data-theme="dark"]) .positive,
+      :root:not([data-theme="dark"]) .growth-tooltip-gain { color: #2f8a3b; fill: #2f8a3b; }
+      :root:not([data-theme="dark"]) .growth-value,
+      :root:not([data-theme="dark"]) .sparkline path { stroke: #3f9347; }
+      :root:not([data-theme="dark"]) .growth-fill { fill: rgba(63, 147, 71, .12); }
+      :root:not([data-theme="dark"]) .growth-dot { fill: #3f9347; }
+      :root:not([data-theme="dark"]) .bottom {
+        border-color: #eef2ec;
+        background: rgba(255,255,255,.94);
+        box-shadow: 0 -12px 32px rgba(34, 49, 36, .1);
+      }
+      :root:not([data-theme="dark"]) .bottom button.active,
+      :root:not([data-theme="dark"]) .bottom button:hover {
+        color: #3f9347;
+        background: #edf6ea;
+      }
+      :root[data-theme="dark"] body {
+        background:
+          radial-gradient(circle at 50% -8%, rgba(32, 197, 92, .12), transparent 28%),
+          radial-gradient(circle at 92% 20%, rgba(44, 197, 94, .08), transparent 24%),
+          linear-gradient(180deg, #02090c 0%, #061117 45%, #02080b 100%);
+      }
+      :root[data-theme="dark"] header { color: #f4f7f0; }
+      :root[data-theme="dark"] .settings-menu .icon-btn { color: #f4f7f0; }
+      :root[data-theme="dark"] .settings-menu .icon-btn:hover { color: #2cc55e; }
+      :root[data-theme="dark"] .account-btn,
+      :root[data-theme="dark"] .icon-btn:not(#settingsToggle) {
+        border: 1px solid #263641;
+        background: rgba(15, 27, 35, .9);
+        color: #f4f7f0;
+        box-shadow: 0 12px 28px rgba(0,0,0,.28);
+      }
+      :root[data-theme="dark"] .summary {
+        border: 1px solid rgba(44, 197, 94, .2);
+        background:
+          radial-gradient(circle at 85% 65%, rgba(44, 197, 94, .14), transparent 28%),
+          linear-gradient(135deg, #052616 0%, #07351c 48%, #0b4323 100%);
+        box-shadow: 0 18px 42px rgba(0,0,0,.42), inset 0 0 0 1px rgba(255,255,255,.04);
+      }
+      :root[data-theme="dark"] .summary-metric { border-color: rgba(255,255,255,.14); }
+      :root[data-theme="dark"] .summary-metric span,
+      :root[data-theme="dark"] .summary-metric small,
+      :root[data-theme="dark"] .summary .fx-note {
+        color: rgba(244,247,240,.78);
+      }
+      :root[data-theme="dark"] .summary-metric strong,
+      :root[data-theme="dark"] .summary-metric:first-child strong,
+      :root[data-theme="dark"] .summary .positive,
+      :root[data-theme="dark"] .summary .negative {
+        color: #fff;
+      }
+      :root[data-theme="dark"] section,
+      :root[data-theme="dark"] .tabs,
+      :root[data-theme="dark"] .settings-popover,
+      :root[data-theme="dark"] .account-popover,
+      :root[data-theme="dark"] .success-card {
+        border-color: #263641;
+        background: linear-gradient(145deg, rgba(15,27,35,.94), rgba(7,17,23,.96));
+        box-shadow: 0 18px 42px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.03);
+      }
+      :root[data-theme="dark"] .setting-row,
+      :root[data-theme="dark"] .setting-field,
+      :root[data-theme="dark"] .quick-card,
+      :root[data-theme="dark"] .growth-stat,
+      :root[data-theme="dark"] .capture-actions button,
+      :root[data-theme="dark"] .holdings,
+      :root[data-theme="dark"] .transactions,
+      :root[data-theme="dark"] .bulk-card {
+        border-color: #263641;
+        background: rgba(12, 23, 30, .9);
+      }
+      :root[data-theme="dark"] .setting-row:hover,
+      :root[data-theme="dark"] .capture-actions button:hover {
+        border-color: rgba(44,197,94,.48);
+        background: rgba(18, 39, 28, .95);
+        color: #dfffe9;
+      }
+      :root[data-theme="dark"] .setting-icon,
+      :root[data-theme="dark"] .quick-card-icon,
+      :root[data-theme="dark"] .growth-stat-icon,
+      :root[data-theme="dark"] .tx-menu-action,
+      :root[data-theme="dark"] .tx-badge {
+        color: #2cc55e;
+        background: rgba(44, 197, 94, .1);
+        border-color: rgba(44, 197, 94, .18);
+      }
+      :root[data-theme="dark"] textarea,
+      :root[data-theme="dark"] input,
+      :root[data-theme="dark"] select,
+      :root[data-theme="dark"] .tf-options,
+      :root[data-theme="dark"] .growth-tooltip-card {
+        border-color: #263641;
+        background: #0b151c;
+        color: #f4f7f0;
+      }
+      :root[data-theme="dark"] .primary,
+      :root[data-theme="dark"] .profit-toggle button.active,
+      :root[data-theme="dark"] .capture-actions button::before {
+        background: linear-gradient(135deg, #2cc55e, #19a84d);
+        color: #fff;
+        box-shadow: 0 14px 26px rgba(44, 197, 94, .22);
+      }
+      :root[data-theme="dark"] .secondary,
+      :root[data-theme="dark"] .tf-trigger,
+      :root[data-theme="dark"] .portfolio-actions select {
+        border-color: #263641;
+        color: #dfffe9;
+        background: rgba(12, 23, 30, .9);
+      }
+      :root[data-theme="dark"] .tabs button { background: transparent; color: #b2bbb8; }
+      :root[data-theme="dark"] .tabs button.active {
+        color: #2cc55e;
+        border-bottom-color: #2cc55e;
+        background: linear-gradient(180deg, rgba(44,197,94,.08), transparent);
+      }
+      :root[data-theme="dark"] .positive,
+      :root[data-theme="dark"] .growth-tooltip-gain { color: #2cc55e; fill: #2cc55e; }
+      :root[data-theme="dark"] .growth-value,
+      :root[data-theme="dark"] .sparkline path { stroke: #2cc55e; }
+      :root[data-theme="dark"] .growth-fill { fill: rgba(44, 197, 94, .15); }
+      :root[data-theme="dark"] .growth-dot { fill: #2cc55e; stroke: #061117; }
+      :root[data-theme="dark"] .growth-axis,
+      :root[data-theme="dark"] .growth-grid { stroke: rgba(255,255,255,.1); }
+      :root[data-theme="dark"] .holding,
+      :root[data-theme="dark"] .tx,
+      :root[data-theme="dark"] .swipe-row {
+        border-color: #263641;
+        background: rgba(12, 23, 30, .74);
+      }
+      :root[data-theme="dark"] .allocation-ring {
+        background: conic-gradient(#2cc55e calc(var(--p) * 1%), #2b3740 0);
+      }
+      :root[data-theme="dark"] .allocation-ring::after { background: #0c171e; }
+      :root[data-theme="dark"] .bottom {
+        border-color: #263641;
+        background: rgba(4, 11, 15, .94);
+        box-shadow: 0 -14px 34px rgba(0,0,0,.44);
+      }
+      :root[data-theme="dark"] .bottom button { color: #c6cfcc; }
+      :root[data-theme="dark"] .bottom button.active,
+      :root[data-theme="dark"] .bottom button:hover {
+        color: #2cc55e;
+        background: rgba(44, 197, 94, .12);
+      }
       @keyframes popup-enter { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
       @keyframes check-pop { from { opacity: 0; transform: scale(.72); } to { opacity: 1; transform: scale(1); } }
       @keyframes check-draw { to { stroke-dashoffset: 0; } }
@@ -358,15 +597,16 @@
         .icon-btn, .account-btn { width: 54px; height: 54px; }
         .account-menu { width: 54px; }
         h1 { font-size: 1.85rem; }
+        .brand-logo { width: min(100%, 234px); max-height: 50px; }
         header p { font-size: .8rem; }
         .summary, section { padding: 20px; border-radius: 18px; }
         .summary .big { font-size: 2.55rem; }
         .summary-dashboard { grid-template-columns: 1fr; padding: 0; }
         .summary-metric { padding: 18px 20px; border-left: 0; border-top: 1px solid #dfe8e5; }
+        :root:not([data-theme="dark"]) .summary-metric { border-top-color: rgba(255,255,255,.26); }
+        :root[data-theme="dark"] .summary-metric { border-top-color: rgba(255,255,255,.14); }
         .summary-metric:first-child { padding-top: 22px; border-top: 0; }
-        .summary-metric span { padding-right: 116px; }
-        .summary-metric:first-child strong { padding-right: 116px; }
-        .currency-control { right: 18px; top: 18px; width: 104px; }
+        .settings-menu { width: 54px; }
         .tabs { display: none; }
         .form-grid, .capture-actions { grid-template-columns: 1fr; }
         .form-grid > label, .form-grid input, .form-grid select { min-width: 0; width: 100%; max-width: 100%; }
@@ -403,10 +643,40 @@
     <main class="app">
       <input id="file" hidden type="file" accept="image/*" multiple />
       <header>
-        <button class="icon-btn theme-toggle" id="themeToggle" aria-label="Switch to dark mode">&#9790;</button>
+        <div class="settings-menu">
+          <button class="icon-btn" id="settingsToggle" aria-label="Open settings menu" aria-expanded="false" aria-controls="settingsPopover">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"></path><path d="M4 12h16"></path><path d="M4 17h16"></path></svg>
+          </button>
+          <div class="settings-popover" id="settingsPopover">
+            <div>
+              <strong class="settings-title">Settings</strong>
+              <span class="settings-hint">ปรับธีมและสกุลเงินที่ใช้แสดงผล</span>
+            </div>
+            <button class="setting-row" id="themeToggle" type="button">
+              <span class="setting-icon" aria-hidden="true" id="themeIcon">
+                <svg viewBox="0 0 24 24"><path d="M12 3v2"></path><path d="M12 19v2"></path><path d="M4.22 4.22l1.42 1.42"></path><path d="M18.36 18.36l1.42 1.42"></path><path d="M3 12h2"></path><path d="M19 12h2"></path><path d="M4.22 19.78l1.42-1.42"></path><path d="M18.36 5.64l1.42-1.42"></path><circle cx="12" cy="12" r="4"></circle></svg>
+              </span>
+              <span>
+                <strong id="themeLabel">Light mode</strong>
+                <span class="settings-hint" id="themeHint" hidden></span>
+              </span>
+            </button>
+            <label class="setting-field">
+              <span class="setting-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M12 3v18"></path><path d="M17 7H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6"></path></svg>
+              </span>
+              <span class="currency-select-wrap">
+                <select id="displayCurrency">
+                  <option value="THB">฿ THB</option>
+                  <option value="USD">$ USD</option>
+                </select>
+              </span>
+            </label>
+          </div>
+        </div>
         <div>
-          <h1>DCA Ledger</h1>
-          <p>พอร์ตและประวัติรายการ</p>
+          <h1><img class="brand-logo" id="brandLogo" src="assets/logo/font%20logo%20green4%20ENG.png" alt="DCA Ledger" /></h1>
+          <p hidden></p>
         </div>
         <div class="account-menu">
           <button class="account-btn" id="accountButton" aria-label="Open account menu">
@@ -446,10 +716,6 @@
         </div>
         <span id="totalCost" hidden>฿0.00</span>
         <span id="currentValue" hidden>฿0.00</span>
-        <label class="currency-control">
-          สกุลเงิน
-          <select id="displayCurrency"><option value="THB">THB</option><option value="USD">USD</option></select>
-        </label>
       </div>
 
       <nav class="tabs">
@@ -503,25 +769,21 @@
           </div>
         </div>
         <small class="quote-note">Uses current prices for value, not historical quote data.</small>
-        <div class="quick-card">
-          <div class="quick-card-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
-          </div>
-          <div>
-            <strong>Upload receipt</strong>
-            <small>อ่านสลิปด้วย AI แล้วตรวจสอบก่อนบันทึก</small>
-          </div>
-          <button class="secondary" id="quickUploadReceipt" type="button">Add</button>
-        </div>
       </section>
 
       <section data-panel="capture">
         <h2>Capture receipt</h2>
         <p>ถ่ายรูปหรือเลือกภาพสลิปหุ้น แล้วตรวจสอบตัวเลขก่อนบันทึก</p>
         <div class="capture-actions">
-          <button id="uploadReceipt">
-            <span>Upload receipt photos</span>
-            <small>ถ่ายรูปหรือเลือกภาพสลิปหุ้น</small>
+          <button class="quick-card" id="uploadReceipt">
+            <div class="quick-card-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+            </div>
+            <div>
+              <strong>Upload receipt</strong>
+              <small>อ่านสลิปด้วย AI แล้วตรวจสอบก่อนบันทึก</small>
+            </div>
+            <span class="secondary">Add</span>
           </button>
         </div>
         <div class="preview" id="preview"><img id="previewImg" alt="Uploaded transaction screenshot" /></div>
@@ -705,8 +967,15 @@
       function applyTheme(theme) {
         state.theme = theme === 'dark' ? 'dark' : 'light';
         document.documentElement.dataset.theme = state.theme;
-        $('themeToggle').textContent = state.theme === 'dark' ? '\u2600' : '\u263e';
+        $('brandLogo').src = state.theme === 'dark'
+          ? 'assets/logo/font%20logo%20green3%20ENG.png'
+          : 'assets/logo/font%20logo%20green4%20ENG.png';
         $('themeToggle').setAttribute('aria-label', state.theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+        $('themeLabel').textContent = state.theme === 'dark' ? 'Dark mode' : 'Light mode';
+        $('themeHint').textContent = '';
+        $('themeIcon').innerHTML = state.theme === 'dark'
+          ? '<svg viewBox="0 0 24 24"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3 6.5 6.5 0 0 0 21 12.8Z"></path></svg>'
+          : '<svg viewBox="0 0 24 24"><path d="M12 3v2"></path><path d="M12 19v2"></path><path d="M4.22 4.22l1.42 1.42"></path><path d="M18.36 18.36l1.42 1.42"></path><path d="M3 12h2"></path><path d="M19 12h2"></path><path d="M4.22 19.78l1.42-1.42"></path><path d="M18.36 5.64l1.42-1.42"></path><circle cx="12" cy="12" r="4"></circle></svg>';
       }
       async function toggleTheme() {
         applyTheme(state.theme === 'dark' ? 'light' : 'dark');
@@ -1772,10 +2041,6 @@
         if (button.dataset.txAction === 'delete') removeTx(button.dataset.txId);
       });
       document.querySelectorAll('[data-tab]').forEach((btn) => btn.addEventListener('click', () => setTab(btn.dataset.tab)));
-      $('quickUploadReceipt').addEventListener('click', () => {
-        setTab('capture');
-        $('uploadReceipt').click();
-      });
       $('uploadReceipt').addEventListener('click', () => {
         $('file').value = '';
         $('file').click();
@@ -1844,6 +2109,11 @@
       $('accountLogin').addEventListener('click', lineLogin);
       $('accountLogout').addEventListener('click', lineLogout);
       $('themeToggle').addEventListener('click', toggleTheme);
+      $('settingsToggle').addEventListener('click', () => {
+        const open = !$('settingsPopover').classList.contains('open');
+        $('settingsPopover').classList.toggle('open', open);
+        $('settingsToggle').setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
       $('successClose').addEventListener('click', hideSaveSuccess);
       $('successPopup').addEventListener('click', (event) => {
         if (event.target === $('successPopup')) hideSaveSuccess();
@@ -1853,6 +2123,8 @@
         if (event.key === 'Escape') {
           $('timeframeMenu').classList.remove('open');
           $('timeframeTrigger').setAttribute('aria-expanded', 'false');
+          $('settingsPopover').classList.remove('open');
+          $('settingsToggle').setAttribute('aria-expanded', 'false');
         }
       });
       $('accountButton').addEventListener('click', () => {
@@ -1861,6 +2133,10 @@
       document.addEventListener('click', (event) => {
         if (!event.target.closest('.account-menu')) {
           $('accountPopover').classList.remove('open');
+        }
+        if (!event.target.closest('.settings-menu')) {
+          $('settingsPopover').classList.remove('open');
+          $('settingsToggle').setAttribute('aria-expanded', 'false');
         }
         if (!event.target.closest('#timeframeMenu')) {
           $('timeframeMenu').classList.remove('open');
