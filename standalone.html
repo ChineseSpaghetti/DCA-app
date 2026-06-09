@@ -4,8 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>DCA Ledger</title>
-    <link rel="preload" as="image" href="assets/logo/font%20logo%20green4%20ENG.png" />
-    <link rel="preload" as="image" href="assets/logo/font%20logo%20green3%20ENG.png" />
+    <link rel="preload" as="image" href="assets/logo/logo-light.png" />
+    <link rel="preload" as="image" href="assets/logo/logo-dark.png" />
     <link rel="preload" as="image" href="assets/line-login/btn_login_base.png" />
     <link rel="preload" as="image" href="assets/line-login/btn_login_hover.png" />
     <link rel="preload" as="image" href="assets/line-login/btn_login_press.png" />
@@ -680,7 +680,7 @@
           </div>
         </div>
         <div>
-          <h1><img class="brand-logo" id="brandLogo" src="assets/logo/font%20logo%20green4%20ENG.png" alt="DCA Ledger" /></h1>
+          <h1><img class="brand-logo" id="brandLogo" src="assets/logo/logo-light.png" alt="DCA Ledger" /></h1>
           <p hidden></p>
         </div>
         <div class="account-menu">
@@ -973,8 +973,8 @@
         state.theme = theme === 'dark' ? 'dark' : 'light';
         document.documentElement.dataset.theme = state.theme;
         $('brandLogo').src = state.theme === 'dark'
-          ? 'assets/logo/font%20logo%20green3%20ENG.png'
-          : 'assets/logo/font%20logo%20green4%20ENG.png';
+          ? 'assets/logo/logo-dark.png'
+          : 'assets/logo/logo-light.png';
         $('themeToggle').setAttribute('aria-label', state.theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
         $('themeLabel').textContent = state.theme === 'dark' ? 'Dark mode' : 'Light mode';
         $('themeHint').textContent = '';
