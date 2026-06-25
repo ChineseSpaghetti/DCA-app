@@ -10,6 +10,18 @@ export function splitDataUrl(dataUrl) {
   return { mimeType, data };
 }
 
+function describeFetchError(error) {
+  return error?.cause?.message || error?.message || 'fetch failed';
+}
+
+async function fetchGemini(url, requestOptions) {
+  try {
+    return await fetch(url, requestOptions);
+  } catch (error) {
+    throw new Error(`Gemini request network failed: ${describeFetchError(error)}`);
+  }
+}
+
 async function generateGeminiJson({ apiKey, contents, schema, temperature = 0 }) {
   const requestOptions = {
     method: 'POST',
@@ -26,7 +38,7 @@ async function generateGeminiJson({ apiKey, contents, schema, temperature = 0 })
 
   let lastError;
   for (const model of GEMINI_MODELS) {
-    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, requestOptions);
+    const geminiResponse = await fetchGemini(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, requestOptions);
     const geminiData = await geminiResponse.json();
     if (geminiResponse.status === 404) {
       lastError = new Error(JSON.stringify(geminiData));
@@ -58,7 +70,7 @@ async function generateGeminiText({ apiKey, contents, temperature = 0.35 }) {
 
   let lastError;
   for (const model of GEMINI_MODELS) {
-    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, requestOptions);
+    const geminiResponse = await fetchGemini(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, requestOptions);
     const geminiData = await geminiResponse.json();
     if (geminiResponse.status === 404) {
       lastError = new Error(JSON.stringify(geminiData));

@@ -170,6 +170,13 @@ export default async function handler(request, response) {
       try {
         await handleEvent(event);
       } catch (error) {
+        console.error('LINE webhook event failed', {
+          eventType: event.type,
+          messageType: event.message?.type,
+          messageId: event.message?.id,
+          error: error.message,
+          stack: error.stack,
+        });
         if (event.replyToken) {
           await replyLine(event.replyToken, textMessage(`Sorry, I could not handle that yet: ${error.message || 'Unknown error'}`)).catch(() => {});
         }
