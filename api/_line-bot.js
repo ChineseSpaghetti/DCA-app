@@ -41,7 +41,7 @@ export async function downloadLineImage(messageId) {
 
 export async function replyLine(replyToken, messages) {
   if (!replyToken) return;
-  const response = await fetch('https://api.line.me/v2/bot/message/reply', {
+  const response = await fetchWithRetry('https://api.line.me/v2/bot/message/reply', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken()}`,
@@ -51,7 +51,7 @@ export async function replyLine(replyToken, messages) {
       replyToken,
       messages: Array.isArray(messages) ? messages.slice(0, 5) : [messages],
     }),
-  });
+  }, 'LINE reply');
   if (!response.ok) {
     const text = await response.text();
     throw new Error(text || `LINE reply failed: ${response.status}`);

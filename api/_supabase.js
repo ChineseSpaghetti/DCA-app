@@ -14,11 +14,20 @@ export function supabaseHeaders(extra = {}) {
   };
 }
 
+function describeFetchError(error) {
+  return error?.cause?.message || error?.message || 'fetch failed';
+}
+
 export async function supabaseFetch(path, options = {}) {
-  const response = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    ...options,
-    headers: supabaseHeaders(options.headers),
-  });
+  let response;
+  try {
+    response = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+      ...options,
+      headers: supabaseHeaders(options.headers),
+    });
+  } catch (error) {
+    throw new Error(`Supabase request network failed: ${describeFetchError(error)}`);
+  }
   const text = await response.text();
   const data = text ? JSON.parse(text) : null;
   if (!response.ok) {
