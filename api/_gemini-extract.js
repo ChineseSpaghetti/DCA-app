@@ -53,6 +53,30 @@ function withSourceList(text, sources) {
   return `${text}\n\nแหล่งข้อมูล:\n${sourceText}`;
 }
 
+function isRetryableGeminiStatus(status) {
+  return status === 429 || status === 500 || status === 503 || status === 504;
+}
+
+function fallbackClassifyPortfolioQuestion(text) {
+  const message = String(text || '').toLowerCase();
+  const hasAny = (words) => words.some((word) => message.includes(word));
+  const explanationWords = ['ทำไม', 'why', 'เพราะอะไร', 'เกิดอะไร', 'ขึ้น', 'ลง', 'ตก', 'ร่วง', 'ดีด'];
+  const newsWords = ['ข่าว', 'news', 'ล่าสุด', 'today', 'วันนี้', 'ตลาด', 'market', 'fed', 'เงินเฟ้อ', 'earnings', 'งบ', 'ผลประกอบการ'];
+  const adviceWords = ['แนะนำ', 'ควร', 'ทำไง', 'ทำอย่างไร', 'review', 'suggest', 'advice', 'what should'];
+
+  if (hasAny(explanationWords)) {
+    return { intent: 'market_explanation', symbol: '', limit: 5, confidence: 0.6 };
+  }
+  if (hasAny(newsWords)) {
+    return { intent: 'market_news', symbol: '', limit: 5, confidence: 0.6 };
+  }
+  if (hasAny(adviceWords)) {
+    return { intent: 'portfolio_advice', symbol: '', limit: 5, confidence: 0.55 };
+  }
+
+  return { intent: 'help', symbol: '', limit: 5, confidence: 0.5 };
+}
+
 async function generateGeminiJson({ apiKey, contents, schema, temperature = 0 }) {
   const requestOptions = {
     method: 'POST',
@@ -78,6 +102,10 @@ async function generateGeminiJson({ apiKey, contents, schema, temperature = 0 })
     if (!geminiResponse.ok) {
       const error = new Error(JSON.stringify(geminiData));
       error.status = geminiResponse.status;
+      if (isRetryableGeminiStatus(geminiResponse.status)) {
+        lastError = error;
+        continue;
+      }
       throw error;
     }
     const text = extractTextFromGeminiData(geminiData);
@@ -110,6 +138,10 @@ async function generateGeminiText({ apiKey, contents, temperature = 0.35 }) {
     if (!geminiResponse.ok) {
       const error = new Error(JSON.stringify(geminiData));
       error.status = geminiResponse.status;
+      if (isRetryableGeminiStatus(geminiResponse.status)) {
+        lastError = error;
+        continue;
+      }
       throw error;
     }
     const text = extractTextFromGeminiData(geminiData);
@@ -234,16 +266,17 @@ export async function classifyPortfolioQuestion(text) {
     propertyOrdering: ['intent', 'symbol', 'limit', 'confidence'],
   };
 
-  return generateGeminiJson({
-    apiKey,
-    schema,
-    temperature: 0,
-    contents: [
-      {
-        role: 'user',
-        parts: [
-          {
-            text: `Classify this LINE chat message from a Thai retail investor using a DCA portfolio app.
+  try {
+    return await generateGeminiJson({
+      apiKey,
+      schema,
+      temperature: 0,
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            {
+              text: `Classify this LINE chat message from a Thai retail investor using a DCA portfolio app.
 
             Return only the requested JSON.
 
@@ -258,11 +291,18 @@ export async function classifyPortfolioQuestion(text) {
             Normalize Thai/US stock symbols to uppercase when present.
 
             Message: ${String(text || '').slice(0, 500)}`,
-          },
-        ],
-      },
-    ],
-  });
+            },
+          ],
+        },
+      ],
+    });
+  } catch (error) {
+    console.error('Gemini intent classification failed, using keyword fallback', {
+      error: error.message,
+      status: error.status,
+    });
+    return fallbackClassifyPortfolioQuestion(text);
+  }
 }
 
 export async function polishPortfolioAnswer({ userMessage, factualAnswer, intent }) {
