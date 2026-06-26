@@ -194,7 +194,6 @@ export async function polishPortfolioAnswer({ userMessage, factualAnswer, intent
     '- Plain text only. Short line breaks are okay.',
     '- Tasteful emoji decoration is encouraged when it fits the answer, for example one or two relevant emojis like 📊, 💚, ✅, ⚠️, or 🔎.',
     '- Do not overuse emojis. Avoid emoji-only lines.',
-    '- Do not give personalized buy/sell/hold recommendations for specific stocks.',
     '- Only add safe next-check suggestions if the user asked for advice, review, suggestions, or what to do next.',
     '- Keep it under 700 characters and suitable for a LINE chat bubble.',
     '- If the factual answer is a help message or says there is no data, keep it practical and brief.',
