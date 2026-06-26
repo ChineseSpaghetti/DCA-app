@@ -152,7 +152,7 @@ export async function classifyPortfolioQuestion(text) {
     properties: {
       intent: {
         type: 'STRING',
-        enum: ['portfolio_summary', 'symbol_holding', 'unrealized_profit', 'realized_profit', 'average_cost', 'total_value', 'top_gain', 'top_loss', 'recent_records', 'portfolio_advice', 'help', 'unknown'],
+        enum: ['portfolio_summary', 'symbol_holding', 'unrealized_profit', 'realized_profit', 'average_cost', 'total_value', 'top_gain', 'top_loss', 'recent_records', 'portfolio_advice','market_news', 'market_explanation', 'general_chat', 'help', 'unknown'],
       },
       symbol: { type: 'STRING' },
       limit: { type: 'NUMBER' },
@@ -171,7 +171,21 @@ export async function classifyPortfolioQuestion(text) {
         role: 'user',
         parts: [
           {
-            text: `Classify this LINE chat message from a Thai retail investor using a DCA portfolio app. Return only the requested JSON. Choose portfolio_advice when the user asks for suggestions, review, what to do next, risk, allocation, or general portfolio observations. Choose help for greetings or requests for examples. Choose unknown for unrelated text. Normalize Thai/US stock symbols to uppercase when present.\n\nMessage: ${String(text || '').slice(0, 500)}`,
+            text: `Classify this LINE chat message from a Thai retail investor using a DCA portfolio app.
+
+            Return only the requested JSON.
+            
+            Choose:
+            - market_news when the user asks about latest news, earnings, Fed, macro, market update, stock news, or what happened today.
+            - market_explanation when the user asks why a stock/index/crypto moved, why price rose/fell, or asks for explanation of market movement.
+            - portfolio_advice when the user asks for suggestions, review, what to do next, risk, allocation, or general portfolio observations.
+            - help for greetings or requests for examples.
+            - general_chat for simple non-investment conversation.
+            - unknown for unrelated text.
+            
+            Normalize Thai/US stock symbols to uppercase when present.
+            
+            Message: ${String(text || '').slice(0, 500)}`,
           },
         ],
       },
