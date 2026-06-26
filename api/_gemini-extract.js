@@ -234,3 +234,40 @@ export async function polishPortfolioAnswer({ userMessage, factualAnswer, intent
     return factualAnswer;
   }
 }
+
+export async function generateGeminiSearchText({ userMessage }) {
+  const apiKey = chatApiKey();
+
+  if (!apiKey) {
+    return {
+      text: 'ยังไม่ได้ตั้งค่า GEMINI_CHAT_API_KEY หรือ GEMINI_API_KEY ใน Vercel ครับ',
+    };
+  }
+
+  const prompt = [
+    'You are a concise Thai investing news assistant.',
+    'Answer in Thai.',
+    'If the user asks for stock/news/market updates, summarize clearly.',
+    'Do not give financial advice. Mention that the user should verify before investing.',
+    '',
+    `User question: ${userMessage}`,
+  ].join('\n');
+
+  try {
+    const text = await generateGeminiText({
+      apiKey,
+      prompt,
+      temperature: 0.3,
+    });
+
+    return {
+      text: text || 'ขอโทษครับ ตอนนี้ Gemini ยังตอบข่าวไม่ได้',
+    };
+  } catch (error) {
+    console.error('Gemini search text failed', error);
+
+    return {
+      text: `ขอโทษครับ ตอนนี้ดึงข่าวด้วย Gemini ไม่สำเร็จ: ${error.message || 'unknown error'}`,
+    };
+  }
+}
