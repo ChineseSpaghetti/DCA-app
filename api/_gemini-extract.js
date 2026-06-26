@@ -1,4 +1,5 @@
-const GEMINI_MODELS = ['gemini-3.1-flash-lite', 'gemini-2.5-flash-lite'];
+const GEMINI_MODELS = ['gemini-2.5-flash-lite', 'gemini-2.5-flash'];
+const GEMINI_SEARCH_MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite'];
 
 function chatApiKey() {
   return process.env.GEMINI_CHAT_API_KEY || process.env.GEMINI_API_KEY;
@@ -20,6 +21,36 @@ async function fetchGemini(url, requestOptions) {
   } catch (error) {
     throw new Error(`Gemini request network failed: ${describeFetchError(error)}`);
   }
+}
+
+function extractTextFromGeminiData(geminiData) {
+  return geminiData?.candidates?.[0]?.content?.parts
+    ?.map((part) => part.text || '')
+    .join('')
+    .trim();
+}
+
+function extractGroundingSources(geminiData) {
+  const chunks = geminiData?.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+  const seen = new Set();
+  const sources = [];
+
+  for (const chunk of chunks) {
+    const web = chunk.web || {};
+    const uri = web.uri;
+    if (!uri || seen.has(uri)) continue;
+    seen.add(uri);
+    sources.push({ title: web.title || uri, uri });
+    if (sources.length >= 3) break;
+  }
+
+  return sources;
+}
+
+function withSourceList(text, sources) {
+  if (!sources.length) return text;
+  const sourceText = sources.map((source, index) => `${index + 1}. ${source.title}\n${source.uri}`).join('\n');
+  return `${text}\n\nแหล่งข้อมูล:\n${sourceText}`;
 }
 
 async function generateGeminiJson({ apiKey, contents, schema, temperature = 0 }) {
@@ -49,7 +80,7 @@ async function generateGeminiJson({ apiKey, contents, schema, temperature = 0 })
       error.status = geminiResponse.status;
       throw error;
     }
-    const text = geminiData.candidates?.[0]?.content?.parts?.find((part) => part.text)?.text;
+    const text = extractTextFromGeminiData(geminiData);
     if (!text) throw new Error('No structured output returned by Gemini.');
     return JSON.parse(text);
   }
@@ -81,11 +112,52 @@ async function generateGeminiText({ apiKey, contents, temperature = 0.35 }) {
       error.status = geminiResponse.status;
       throw error;
     }
-    const text = geminiData.candidates?.[0]?.content?.parts?.find((part) => part.text)?.text;
+    const text = extractTextFromGeminiData(geminiData);
     if (!text) throw new Error('No text output returned by Gemini.');
-    return text.trim();
+    return text;
   }
   throw lastError || new Error('Gemini model unavailable.');
+}
+
+async function generateGroundedGeminiText({ apiKey, contents, temperature = 0.25 }) {
+  let lastError;
+
+  for (const model of GEMINI_SEARCH_MODELS) {
+    const requestOptions = {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents,
+        tools: [{ google_search: {} }],
+        generationConfig: {
+          temperature,
+        },
+      }),
+    };
+    const geminiResponse = await fetchGemini(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, requestOptions);
+    const geminiData = await geminiResponse.json();
+
+    if (geminiResponse.status === 404) {
+      lastError = new Error(JSON.stringify(geminiData));
+      continue;
+    }
+    if (!geminiResponse.ok) {
+      const error = new Error(JSON.stringify(geminiData));
+      error.status = geminiResponse.status;
+      lastError = error;
+      continue;
+    }
+
+    const text = extractTextFromGeminiData(geminiData);
+    if (!text) {
+      lastError = new Error('No grounded text output returned by Gemini.');
+      continue;
+    }
+
+    return withSourceList(text, extractGroundingSources(geminiData));
+  }
+
+  throw lastError || new Error('Gemini Google Search grounding unavailable.');
 }
 
 export async function extractTransactionFromImage(image) {
@@ -152,7 +224,7 @@ export async function classifyPortfolioQuestion(text) {
     properties: {
       intent: {
         type: 'STRING',
-        enum: ['portfolio_summary', 'symbol_holding', 'unrealized_profit', 'realized_profit', 'average_cost', 'total_value', 'top_gain', 'top_loss', 'recent_records', 'portfolio_advice','market_news', 'market_explanation', 'general_chat', 'help', 'unknown'],
+        enum: ['portfolio_summary', 'symbol_holding', 'unrealized_profit', 'realized_profit', 'average_cost', 'total_value', 'top_gain', 'top_loss', 'recent_records', 'portfolio_advice', 'market_news', 'market_explanation', 'general_chat', 'help', 'unknown'],
       },
       symbol: { type: 'STRING' },
       limit: { type: 'NUMBER' },
@@ -174,7 +246,7 @@ export async function classifyPortfolioQuestion(text) {
             text: `Classify this LINE chat message from a Thai retail investor using a DCA portfolio app.
 
             Return only the requested JSON.
-            
+
             Choose:
             - market_news when the user asks about latest news, earnings, Fed, macro, market update, stock news, or what happened today.
             - market_explanation when the user asks why a stock/index/crypto moved, why price rose/fell, or asks for explanation of market movement.
@@ -182,9 +254,9 @@ export async function classifyPortfolioQuestion(text) {
             - help for greetings or requests for examples.
             - general_chat for simple non-investment conversation.
             - unknown for unrelated text.
-            
+
             Normalize Thai/US stock symbols to uppercase when present.
-            
+
             Message: ${String(text || '').slice(0, 500)}`,
           },
         ],
@@ -245,29 +317,54 @@ export async function generateGeminiSearchText({ userMessage }) {
   }
 
   const prompt = [
-    'You are a concise Thai investing news assistant.',
-    'Answer in Thai.',
-    'If the user asks for stock/news/market updates, summarize clearly.',
-    'Do not give financial advice. Mention that the user should verify before investing.',
+    'You are a concise Thai investing news assistant inside LINE chat.',
+    'Use Google Search grounding when available and answer from recent, source-backed information.',
+    'Answer in Thai unless the user asks for another language.',
+    'Keep the answer under 1,200 characters so it fits comfortably in LINE.',
+    'Do not give financial advice, buy/sell calls, or price targets.',
+    'If information is uncertain, say so clearly.',
+    'End with a short reminder that this is information only and the user should verify before investing.',
     '',
-    `User question: ${userMessage}`,
+    `User question: ${String(userMessage || '').slice(0, 1000)}`,
   ].join('\n');
 
+  const contents = [
+    {
+      role: 'user',
+      parts: [{ text: prompt }],
+    },
+  ];
+
   try {
-    const text = await generateGeminiText({
+    const text = await generateGroundedGeminiText({
       apiKey,
-      prompt,
-      temperature: 0.3,
+      contents,
+      temperature: 0.25,
+    });
+    return { text };
+  } catch (groundingError) {
+    console.error('Gemini Google Search grounding failed', {
+      error: groundingError.message,
+      status: groundingError.status,
     });
 
-    return {
-      text: text || 'ขอโทษครับ ตอนนี้ Gemini ยังตอบข่าวไม่ได้',
-    };
-  } catch (error) {
-    console.error('Gemini search text failed', error);
-
-    return {
-      text: `ขอโทษครับ ตอนนี้ดึงข่าวด้วย Gemini ไม่สำเร็จ: ${error.message || 'unknown error'}`,
-    };
+    try {
+      const fallbackText = await generateGeminiText({
+        apiKey,
+        contents,
+        temperature: 0.3,
+      });
+      return {
+        text: `${fallbackText}\n\nหมายเหตุ: ตอนนี้ Google Search grounding ใช้งานไม่ได้ จึงเป็นคำตอบจาก Gemini โดยไม่ดึงแหล่งข่าวล่าสุดโดยตรง`,
+      };
+    } catch (fallbackError) {
+      console.error('Gemini search fallback failed', {
+        error: fallbackError.message,
+        status: fallbackError.status,
+      });
+      return {
+        text: `ขอโทษครับ ตอนนี้ดึงข่าวด้วย Gemini ไม่สำเร็จ: ${fallbackError.message || groundingError.message || 'unknown error'}`,
+      };
+    }
   }
 }
