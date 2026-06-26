@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
-import { classifyPortfolioQuestion, extractTransactionFromImage, polishPortfolioAnswer } from './_gemini-extract.js';
+import { classifyPortfolioQuestion, extractTransactionFromImage, polishPortfolioAnswer, generateGeminiSearchText } from './_gemini-extract.js';
 import { lineBotReady, downloadLineImage, pendingConfirmMessage, replyLine, textMessage } from './_line-bot.js';
 import { buildPortfolio, answerPortfolioQuestion, formatTransaction, portfolioHelpMessage } from './_portfolio.js';
 import { supabaseReady } from './_supabase.js';
@@ -124,6 +124,13 @@ async function handleTextEvent(event) {
   }
 
   const intent = await classifyPortfolioQuestion(text);
+
+  if (intent?.intent === 'market_news' || intent?.intent === 'market_explanation') {
+    const result = await generateGeminiSearchText({userMessage: text,});
+    await replyLine(event.replyToken, textMessage(result.text));
+    return;
+  }
+  
   if (!intent || intent.confidence < 0.45 || intent.intent === 'unknown') {
     await replyLine(event.replyToken, textMessage(portfolioHelpMessage()));
     return;
